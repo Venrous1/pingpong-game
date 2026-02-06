@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Pong Game</title>
+    <style>
+        /* СБРОС И БАЗОВЫЕ СТИЛИ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        /* КОНТЕЙНЕР ИГРЫ */
+        .game-container {
+            text-align: center;
+            padding: 10px;
+            max-width: 100%;
+        }
+        
+        /* ЗАГОЛОВОК И ИНФО */
+        .game-header {
+            color: #fff;
+            margin-bottom: 15px;
+            padding: 10px;
+        }
+        
+        .game-title {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: #4CAF50;
+            text-shadow: 0 0 10px #4CAF50;
+        }
+        
+        .score-display {
+            font-size: 1.5rem;
+            margin: 10px 0;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            border: 2px solid #fff;
+        }
+        
+        .controls-info {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        /* ИГРОВОЕ ПОЛЕ */
+        #gameCanvas {
+            background: #000;
+            border: 3px solid #fff;
+            border-radius: 5px;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        
+        /* МОБИЛЬНОЕ УПРАВЛЕНИЕ */
+        .mobile-controls {
+            display: none;
+            margin-top: 20px;
+            gap: 30px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #333, #222);
+            border: 3px solid #fff;
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+            background: linear-gradient(145deg, #444, #333);
+        }
+        
+        /* АДАПТИВНОСТЬ */
+        @media (max-width: 500px) {
+            .game-title { font-size: 1.5rem; }
+            .score-display { font-size: 1.2rem; }
+            #gameCanvas { 
+                width: 95vw; 
+                height: auto; 
+                max-height: 60vh;
+            }
+            .mobile-controls { display: flex; }
+            .control-btn {
+                width: 70px;
+                height: 70px;
+                font-size: 25px;
+            }
+        }
+        
+        @media (max-height: 600px) {
+            body { padding: 10px; }
+            .game-header { margin-bottom: 10px; }
+        }
+        
+        /* АНИМАЦИЯ ПУЛЬСАЦИИ */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- ЗАГОЛОВОК -->
+        <div class="game-header">
+            <h1 class="game-title">🎮 ПИНГ-ПОНГ</h1>
+            <div class="score-display">СЧЕТ: <span id="score">0 : 0</span></div>
+            <p class="controls-info pulse">Управление: W/S или стрелки ↑↓</p>
+        </div>
+        
+        <!-- ИГРОВОЕ ПОЛЕ -->
+        <canvas id="gameCanvas" width="400" height="300"></canvas>
+        
+        <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ -->
+        <div class="mobile-controls">
+            <button class="control-btn" id="upBtn">↑</button>
+            <button class="control-btn" id="downBtn">↓</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== КОНСТАНТЫ И НАСТРОЙКИ ==========
+        const CANVAS_WIDTH = 400;
+        const CANVAS_HEIGHT = 300;
+        const PADDLE_WIDTH = 8;
+        const PADDLE_HEIGHT = 60;
+        const BALL_SIZE = 8;
+        const PLAYER_SPEED = 6;
+        const AI_SPEED = 4;
+        const BALL_SPEED_X = 3;
+        const BALL_SPEED_Y = 2;
+        const WINNING_SCORE = 10;
+        
+        // ========== ПЕРЕМЕННЫЕ ИГРЫ ==========
+        let canvas, ctx, scoreElement;
+        let player, opponent, ball;
+        let keys = {};
+        let gameActive = true;
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        function init() {
+            // Получаем элементы DOM
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            scoreElement = document.getElementById('score');
+            
+            // Инициализируем игровые объекты
+            player = {
+                x: 10,
+                y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
+                score: 0
+            };
+            
+            opponent = {
+                x: CANVAS_WIDTH - PADDLE_WIDTH - 10,
+                y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
+                score: 0
+            };
+            
+            ball = {
+                x: CANVAS_WIDTH / 2,
+                y: CANVAS_HEIGHT / 2,
+                dx: BALL_SPEED_X * (Math.random() > 0.5 ? 1 : -1),
+                dy: BALL_SPEED_Y * (Math.random() > 0.5 ? 1 : -1)
+            };
+            
+            // Настраиваем управление
+            setupControls();
+            
+            // Запускаем игровой цикл
+            gameLoop();
+        }
+        
+        // ========== УПРАВЛЕНИЕ ==========
+        function setupControls() {
+            // Клавиатура
+            window.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
+                    keys[key] = true;
+                    e.preventDefault(); // Предотвращаем прокрутку страницы
+                }
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
+                    keys[key] = false;
+                }
+            });
+            
+            // Мобильные кнопки
+            const upBtn = document.getElementById('upBtn');
+            const downBtn = document.getElementById('downBtn');
+            
+            upBtn.addEventListener('touchstart', () => keys['arrowup'] = true);
+            upBtn.addEventListener('touchend', () => keys['arrowup'] = false);
+            downBtn.addEventListener('touchstart', () => keys['arrowdown'] = true);
+            downBtn.addEventListener('touchend', () => keys['arrowdown'] = false);
+            
+            // Также для мыши (на компьютере)
+            upBtn.addEventListener('mousedown', () => keys['arrowup'] = true);
+            upBtn.addEventListener('mouseup', () => keys['arrowup'] = false);
+            upBtn.addEventListener('mouseleave', () => keys['arrowup'] = false);
+            downBtn.addEventListener('mousedown', () => keys['arrowdown'] = true);
+            downBtn.addEventListener('mouseup', () => keys['arrowdown'] = false);
+            downBtn.addEventListener('mouseleave', () => keys['arrowdown'] = false);
+        }
+        
+        // ========== ОБНОВЛЕНИЕ ИГРЫ ==========
+        function update() {
+            if (!gameActive) return;
+            
+            // Движение игрока
+            if ((keys['w'] || keys['arrowup']) && player.y > 0) {
+                player.y -= PLAYER_SPEED;
+            }
+            if ((keys['s'] || keys['arrowdown']) && player.y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
+                player.y += PLAYER_SPEED;
+            }
+            
+            // AI противника
+            const opponentCenter = opponent.y + PADDLE_HEIGHT / 2;
+            if (opponentCenter < ball.y - 10 && opponent.y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
+                opponent.y += AI_SPEED;
+            }
+            if (opponentCenter > ball.y + 10 && opponent.y > 0) {
+                opponent.y -= AI_SPEED;
+            }
+            
+            // Движение мяча
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            // Отскок от верхней/нижней границы
+            if (ball.y - BALL_SIZE <= 0 || ball.y + BALL_SIZE >= CANVAS_HEIGHT) {
+                ball.dy *= -1;
+                // Корректируем позицию, чтобы не застрять
+                if (ball.y - BALL_SIZE <= 0) ball.y = BALL_SIZE;
+                if (ball.y + BALL_SIZE >= CANVAS_HEIGHT) ball.y = CANVAS_HEIGHT - BALL_SIZE;
+            }
+            
+            // Проверка столкновения с игроком
+            if (ball.x - BALL_SIZE <= player.x + PADDLE_WIDTH &&
+                ball.x + BALL_SIZE >= player.x &&
+                ball.y >= player.y &&
+                ball.y <= player.y + PADDLE_HEIGHT) {
+                
+                // Вычисляем точку удара (от -0.5 до 0.5)
+                const hitPoint = (ball.y - player.y) / PADDLE_HEIGHT - 0.5;
+                
+                // Меняем направление с учетом точки удара
+                ball.dx = Math.abs(ball.dx);
+                ball.dy = hitPoint * 5; // Угол зависит от точки удара
+                
+                // Гарантируем минимальную скорость
+                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                const minSpeed = 3;
+                if (speed < minSpeed) {
+                    ball.dx = (ball.dx / speed) * minSpeed;
+                    ball.dy = (ball.dy / speed) * minSpeed;
+                }
+                
+                // Корректируем позицию, чтобы не застрять
+                ball.x = player.x + PADDLE_WIDTH + BALL_SIZE;
+            }
+            
+            // Проверка столкновения с противником
+            if (ball.x + BALL_SIZE >= opponent.x &&
+                ball.x - BALL_SIZE <= opponent.x + PADDLE_WIDTH &&
+                ball.y >= opponent.y &&
+                ball.y <= opponent.y + PADDLE_HEIGHT) {
+                
+                const hitPoint = (ball.y - opponent.y) / PADDLE_HEIGHT - 0.5;
+                
+                ball.dx = -Math.abs(ball.dx);
+                ball.dy = hitPoint * 5;
+                
+                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                const minSpeed = 3;
+                if (speed < minSpeed) {
+                    ball.dx = (ball.dx / speed) * minSpeed;
+                    ball.dy = (ball.dy / speed) * minSpeed;
+                }
+                
+                ball.x = opponent.x - BALL_SIZE;
+            }
+            
+            // Проверка голов
+            if (ball.x - BALL_SIZE <= 0) {
+                opponent.score++;
+                resetBall();
+            }
+            if (ball.x + BALL_SIZE >= CANVAS_WIDTH) {
+                player.score++;
+                resetBall();
+            }
+            
+            // Обновление счета
+            scoreElement.textContent = `${player.score} : ${opponent.score}`;
+            
+            // Проверка победы
+            if (player.score >= WINNING_SCORE || opponent.score >= WINNING_SCORE) {
+                gameActive = false;
+                setTimeout(() => {
+                    alert(player.score >= WINNING_SCORE ? 
+                        "🎉 ВЫ ПОБЕДИЛИ!" : "🤖 ПОБЕДИЛ КОМПЬЮТЕР!");
+                    resetGame();
+                }, 100);
+            }
+        }
+        
+        // ========== ОТРИСОВКА ==========
+        function draw() {
+            // Очистка холста
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            
+            // Центральная линия
+            ctx.setLineDash([5, 10]);
+            ctx.beginPath();
+            ctx.moveTo(CANVAS_WIDTH / 2, 0);
+            ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Ракетки
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(player.x, player.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+            
+            ctx.fillStyle = '#FF5252';
+            ctx.fillRect(opponent.x, opponent.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+            
+            // Мяч
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, BALL_SIZE, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Эффект свечения мяча
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+        function resetBall() {
+            ball.x = CANVAS_WIDTH / 2;
+            ball.y = CANVAS_HEIGHT / 2;
+            ball.dx = BALL_SPEED_X * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = BALL_SPEED_Y * (Math.random() > 0.5 ? 1 : -1);
+            
+            // Ждем 1 секунду перед возобновлением
+            gameActive = false;
+            setTimeout(() => {
+                gameActive = true;
+            }, 1000);
+        }
+        
+        function resetGame() {
+            player.score = 0;
+            opponent.score = 0;
+            scoreElement.textContent = "0 : 0";
+            resetBall();
+            gameActive = true;
+        }
+        
+        // ========== ИГРОВОЙ ЦИКЛ ==========
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ========== ЗАПУСК ИГРЫ ==========
+        // Ждем загрузки DOM
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Альтернативный запуск для старых браузеров
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
