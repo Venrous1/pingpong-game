@@ -1,637 +1,459 @@
-<script>
-    // ========== КОНФИГУРАЦИЯ ==========
-    const DIFFICULTY = {
-        easy: { ballSpeed: 4, aiSpeed: 3, aiAccuracy: 0.7 },
-        hard: { ballSpeed: 6, aiSpeed: 4, aiAccuracy: 0.85 },
-        ultra: { ballSpeed: 8, aiSpeed: 5, aiAccuracy: 0.95 }
-    };
-    
-    const PHRASES = {
-        win: [
-            "Победа! 🏆", "Отлично! 🎯", "AI повержен! 🤖", 
-            "Мастер пинг-понга! 👑", "Браво! ✨", "Невероятно! 🚀"
-        ],
-        lose: [
-            "Игра окончена", "Попробуйте ещё! 🔄", "AI сильнее...", 
-            "Почти получилось! ⚡", "Тренируйтесь! 🏓", "В следующий раз! 💪"
-        ]
-    };
-    
-    // ========== СИСТЕМА БАФОВ ==========
-    const BUFFS = {
-        BIG_BALL: {
-            id: 'big_ball',
-            name: '🔥 Большой мяч',
-            duration: 240,
-            effect: 'size',
-            multiplier: 2.0,
-            color: '#FF9800',
-            icon: '🔥'
-        },
-        SPEED_BOOST: {
-            id: 'speed_boost',
-            name: '⚡ Ускорение',
-            duration: 180,
-            effect: 'speed',
-            multiplier: 1.5,
-            color: '#2196F3',
-            icon: '⚡'
-        },
-        COLOR_CHANGE: {
-            id: 'color_change',
-            name: '🌈 Цветной мяч',
-            duration: 300,
-            effect: 'color',
-            colors: ['#FF5252', '#4CAF50', '#2196F3', '#FFEB3B', '#E91E63'],
-            icon: '🌈',
-            bonusPoints: 1
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Pong Game</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; touch-action:manipulation; user-select:none; }
+        
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
         }
-    };
-    
-    // ========== СОСТОЯНИЕ ИГРЫ ==========
-    let canvas, ctx;
-    let game = {
-        active: false,
-        paused: false,
-        difficulty: 'easy',
-        playerScore: 0,
-        opponentScore: 0,
-        sound: true,
-        showMobile: true,
-        ballSpeed: 5,
-        buffsEnabled: true
-    };
-    
-    // Игровые объекты
-    let player, opponent, ball;
-    let keys = {};
-    
-    // Система бафов
-    let buffSystem = {
-        cooldown: 1800,
-        activeBuff: null,
-        activeUntil: 0,
-        buffIcon: { x: 0, y: 0, type: null, visible: false, speed: 0 },
-        hitsWithColor: 0,
-        originalBallSize: 10,
-        originalBallSpeed: 5
-    };
-    
-    // ========== ЗВУКИ ==========
-    function beep(freq, duration) {
-        if (!game.sound) return;
         
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = freq;
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + duration);
-        } catch (e) {
-            console.log("Audio not supported");
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            padding: 20px;
         }
-    }
-    
-    // ========== УПРАВЛЕНИЕ ЭКРАНАМИ ==========
-    function showScreen(screenId) {
-        document.querySelectorAll('.screen').forEach(s => {
-            s.style.display = 'none';
-        });
-        const screen = document.getElementById(screenId);
-        if (screen) {
-            screen.style.display = 'flex';
+        
+        /* МЕНЮ */
+        .screen {
+            display: none;
+            background: rgba(0,0,0,0.9);
+            border: 3px solid #4CAF50;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 0 auto;
+            max-width: 500px;
         }
-    }
-    
-    function backToMenu() {
-        game.active = false;
-        showScreen('menuScreen');
-    }
-    
-    function setDifficulty(diff) {
-        game.difficulty = diff;
-        const names = { easy: 'ЛЕГКАЯ', hard: 'СЛОЖНАЯ', ultra: 'УЛЬТРА' };
-        const colors = { easy: 'easy-badge', hard: 'hard-badge', ultra: 'ultra-badge' };
         
-        document.getElementById('difficultyBadge').textContent = names[diff];
-        document.getElementById('difficultyBadge').className = `difficulty-badge ${colors[diff]}`;
+        #menuScreen { display: block; }
         
-        backToMenu();
-    }
-    
-    function saveSettings() {
-        game.sound = document.getElementById('soundToggle').checked;
-        game.showMobile = document.getElementById('mobileButtons').checked;
-        game.buffsEnabled = document.getElementById('buffsToggle').checked;
-        game.ballSpeed = parseInt(document.getElementById('ballSpeed').value);
-        document.getElementById('speedValue').textContent = game.ballSpeed;
+        .game-title {
+            font-size: 2.8rem;
+            margin: 10px 0;
+            color: #4CAF50;
+            text-shadow: 0 0 10px #4CAF50;
+        }
         
-        document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
-        localStorage.setItem('pingpongSettings', JSON.stringify(game));
+        .version {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
         
-        backToMenu();
-    }
-    
-    // ========== ЗАПУСК ИГРЫ ==========
-    function startGame() {
-        showScreen('gameScreen');
-        initGame();
-    }
-    
-    // ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ ==========
-    function initGame() {
-        // Canvas
-        canvas = document.getElementById('gameCanvas');
-        ctx = canvas.getContext('2d');
+        .menu-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 12px auto;
+            padding: 15px;
+            font-size: 1.3rem;
+            background: #2E7D32;
+            color: white;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
         
-        // Автоматический размер
-        const container = canvas.parentElement;
-        const maxWidth = Math.min(500, container.clientWidth - 20);
-        canvas.width = maxWidth;
-        canvas.height = Math.min(400, window.innerHeight * 0.5);
+        .menu-btn:hover {
+            background: #388E3C;
+            transform: scale(1.03);
+        }
         
-        // Объекты
-        player = {
-            x: 15,
-            y: canvas.height / 2 - 50,
-            width: 10,
-            height: 100,
-            speed: 6
+        .menu-info {
+            margin-top: 30px;
+            color: #777;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        /* СЛОЖНОСТЬ */
+        #difficultyScreen { border-color: #2196F3; }
+        
+        .difficulty-btn {
+            background: linear-gradient(145deg, #1976d2, #0d47a1);
+            border-color: #2196F3;
+        }
+        
+        /* ИГРА */
+        #gameScreen {
+            border-color: #2196F3;
+            max-width: 600px;
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .score {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #FFEB3B;
+        }
+        
+        .difficulty-display {
+            font-size: 1.2rem;
+            color: #4CAF50;
+            padding: 5px 15px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            border: 2px solid #4CAF50;
+        }
+        
+        #gameCanvas {
+            background: #000;
+            border: 3px solid white;
+            border-radius: 5px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .game-controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: #333;
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        
+        /* АДАПТИВНОСТЬ */
+        @media (max-width: 650px) {
+            .game-title { font-size: 2rem; }
+            .menu-btn { padding: 12px; font-size: 1.1rem; }
+            #gameCanvas { width: 95vw; height: auto; }
+            .game-controls { flex-direction: column; align-items: center; }
+            .control-btn { width: 90%; margin: 3px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- МЕНЮ -->
+        <div id="menuScreen" class="screen">
+            <h1 class="game-title">PING PONG</h1>
+            <div class="version">Версия 1.0</div>
+            
+            <button class="menu-btn" onclick="startGame()">▶ ИГРАТЬ</button>
+            <button class="menu-btn" onclick="showScreen('difficultyScreen')">⚙ СЛОЖНОСТЬ</button>
+            
+            <div class="menu-info">
+                <p>Управление: W/S или стрелки</p>
+                <p>Пауза: Пробел или P</p>
+                <p>Цель: Первый до 5 очков</p>
+            </div>
+        </div>
+        
+        <!-- СЛОЖНОСТЬ -->
+        <div id="difficultyScreen" class="screen">
+            <h2>🎯 ВЫБЕРИТЕ СЛОЖНОСТЬ</h2>
+            
+            <button class="menu-btn difficulty-btn" onclick="setDifficulty('easy')">
+                🟢 ЛЕГКАЯ
+            </button>
+            
+            <button class="menu-btn difficulty-btn" onclick="setDifficulty('normal')">
+                🟡 НОРМАЛЬНАЯ
+            </button>
+            
+            <button class="menu-btn difficulty-btn" onclick="setDifficulty('hard')">
+                🔴 СЛОЖНАЯ
+            </button>
+            
+            <button class="menu-btn" onclick="backToMenu()" style="margin-top:25px; background:#555;">
+                ← НАЗАД
+            </button>
+        </div>
+        
+        <!-- ИГРА -->
+        <div id="gameScreen" class="screen">
+            <div class="game-header">
+                <div class="score" id="scoreDisplay">0 : 0</div>
+                <div class="difficulty-display" id="difficultyDisplay">ЛЕГКАЯ</div>
+                <button class="control-btn" onclick="pauseGame()">⏸ ПАУЗА</button>
+            </div>
+            
+            <canvas id="gameCanvas" width="500" height="350"></canvas>
+            
+            <div class="game-controls">
+                <button class="control-btn" onclick="pauseGame()" id="pauseBtn">⏸ ПАУЗА</button>
+                <button class="control-btn" onclick="restartGame()">🔄 ЗАНОВО</button>
+                <button class="control-btn" onclick="backToMenu()">🏠 МЕНЮ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== НАСТРОЙКИ ==========
+        const DIFFICULTY = {
+            easy: { botSpeed: 2, errorChance: 0.6 },
+            normal: { botSpeed: 3, errorChance: 0.3 },
+            hard: { botSpeed: 4, errorChance: 0.1 }
         };
         
-        opponent = {
-            x: canvas.width - 25,
-            y: canvas.height / 2 - 50,
-            width: 10,
-            height: 100,
-            speed: DIFFICULTY[game.difficulty].aiSpeed
+        // ========== ПЕРЕМЕННЫЕ ==========
+        let canvas, ctx;
+        let game = {
+            active: false,
+            paused: false,
+            difficulty: 'easy',
+            playerScore: 0,
+            botScore: 0,
+            winningScore: 5
         };
         
-        ball = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            size: 10,
-            dx: game.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
-            dy: game.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
-            originalColor: '#FFFFFF'
-        };
+        let player, bot, ball;
+        let keys = {};
         
-        // Сброс состояния
-        game.playerScore = 0;
-        game.opponentScore = 0;
-        game.active = true;
-        game.paused = false;
+        // ========== ЭКРАНЫ ==========
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById(screenId).style.display = 'block';
+        }
         
-        // Сброс системы бафов
-        buffSystem = {
-            cooldown: 1800,
-            activeBuff: null,
-            activeUntil: 0,
-            buffIcon: { x: 0, y: 0, type: null, visible: false, speed: 0 },
-            hitsWithColor: 0,
-            originalBallSize: ball.size,
-            originalBallSpeed: game.ballSpeed
-        };
+        function backToMenu() {
+            game.active = false;
+            showScreen('menuScreen');
+        }
         
-        // Показать индикатор бафов
-        document.getElementById('buffsIndicator').style.display = 'block';
-        document.getElementById('buffStatus').textContent = 
-            game.buffsEnabled ? 'Бафы: 🟢 Вкл' : 'Бафы: 🔴 Выкл';
-        document.getElementById('activeBuffInfo').style.display = 'none';
+        function setDifficulty(diff) {
+            game.difficulty = diff;
+            const names = { easy: 'ЛЕГКАЯ', normal: 'НОРМАЛЬНАЯ', hard: 'СЛОЖНАЯ' };
+            document.getElementById('difficultyDisplay').textContent = names[diff];
+            backToMenu();
+        }
         
-        updateScore();
-        setupControls();
-        document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
-        document.getElementById('pauseBtn').textContent = '⏸ ПАУЗА';
+        // ========== ИГРА ==========
+        function startGame() {
+            showScreen('gameScreen');
+            initGame();
+        }
         
-        gameLoop();
-    }
-    
-    // ========== УПРАВЛЕНИЕ ==========
-    function setupControls() {
-        keys = {};
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Адаптация
+            if (window.innerWidth < 650) {
+                canvas.width = Math.min(500, window.innerWidth - 40);
+                canvas.height = canvas.width * 0.7;
+            }
+            
+            // Объекты
+            player = {
+                x: 20,
+                y: canvas.height / 2 - 50,
+                width: 10,
+                height: 100,
+                speed: 6
+            };
+            
+            bot = {
+                x: canvas.width - 30,
+                y: canvas.height / 2 - 50,
+                width: 10,
+                height: 100,
+                speed: DIFFICULTY[game.difficulty].botSpeed
+            };
+            
+            ball = {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                size: 10,
+                dx: 4 * (Math.random() > 0.5 ? 1 : -1),
+                dy: 3 * (Math.random() > 0.5 ? 1 : -1)
+            };
+            
+            // Сброс
+            game.playerScore = 0;
+            game.botScore = 0;
+            game.active = true;
+            game.paused = false;
+            
+            updateScore();
+            setupControls();
+            gameLoop();
+        }
         
-        // Клавиатура
-        document.onkeydown = (e) => {
-            const key = e.key.toLowerCase();
-            if (['w', 's', 'arrowup', 'arrowdown', ' ', 'p'].includes(key)) {
-                keys[key] = true;
-                if ((key === ' ' || key === 'p') && game.active) {
-                    pauseGame();
-                    e.preventDefault();
+        function setupControls() {
+            keys = {};
+            
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w', 's', 'arrowup', 'arrowdown', ' ', 'p'].includes(key)) {
+                    keys[key] = true;
+                    if ((key === ' ' || key === 'p') && game.active) {
+                        pauseGame();
+                        e.preventDefault();
+                    }
                 }
-            }
-        };
-        
-        document.onkeyup = (e) => {
-            const key = e.key.toLowerCase();
-            if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
-                keys[key] = false;
-            }
-        };
-        
-        // Мобильные кнопки
-        const upBtn = document.getElementById('upBtn');
-        const downBtn = document.getElementById('downBtn');
-        
-        upBtn.ontouchstart = upBtn.onmousedown = () => {
-            keys['arrowup'] = true;
-        };
-        
-        upBtn.ontouchend = upBtn.onmouseup = upBtn.onmouseleave = () => {
-            keys['arrowup'] = false;
-        };
-        
-        downBtn.ontouchstart = downBtn.onmousedown = () => {
-            keys['arrowdown'] = true;
-        };
-        
-        downBtn.ontouchend = downBtn.onmouseup = downBtn.onmouseleave = () => {
-            keys['arrowdown'] = false;
-        };
-    }
-    
-    // ========== СИСТЕМА БАФОВ ==========
-    function updateBuffs() {
-        if (!game.buffsEnabled || !game.active) return;
-        
-        // Таймер перезарядки
-        if (buffSystem.cooldown > 0 && !buffSystem.buffIcon.visible) {
-            buffSystem.cooldown--;
+            });
             
-            // Появление иконки бафа
-            if (buffSystem.cooldown <= 0) {
-                spawnBuffIcon();
-                buffSystem.cooldown = 1800;
-            }
+            document.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
+                    keys[key] = false;
+                }
+            });
         }
         
-        // Анимация бафа (пульсация)
-        if (buffSystem.buffIcon.visible) {
-            // Простая пульсация
-            buffSystem.buffIcon.y = 80 + Math.sin(Date.now() / 500) * 10;
-        }
-        
-        // Проверка столкновения с ракеткой
-        if (buffSystem.buffIcon.visible) {
-            const icon = buffSystem.buffIcon;
-            if (icon.x > player.x - 30 && icon.x < player.x + player.width + 30 &&
-                icon.y > player.y - 30 && icon.y < player.y + player.height + 30) {
-                
-                activateBuff(icon.type);
-                buffSystem.buffIcon.visible = false;
-                if (game.sound) beep(1200, 0.3);
+        function update() {
+            if (!game.active || game.paused) return;
+            
+            // Игрок
+            if ((keys['w'] || keys['arrowup']) && player.y > 0) {
+                player.y -= 6;
             }
-        }
-        
-        // Обновление активного бафа
-        if (buffSystem.activeBuff) {
-            buffSystem.activeUntil--;
+            if ((keys['s'] || keys['arrowdown']) && player.y < canvas.height - player.height) {
+                player.y += 6;
+            }
             
-            // Обновление индикатора
-            const secondsLeft = Math.ceil(buffSystem.activeUntil / 60);
-            document.getElementById('activeBuffInfo').textContent = 
-                `${buffSystem.activeBuff.icon} ${buffSystem.activeBuff.name}: ${secondsLeft}с`;
+            // Бот с ошибками
+            const diff = DIFFICULTY[game.difficulty];
+            let targetY = ball.y - bot.height / 2;
             
-            if (buffSystem.activeUntil <= 0) {
-                deactivateBuff();
+            if (Math.random() < diff.errorChance) {
+                targetY += (Math.random() - 0.5) * 80;
+            }
+            
+            if (bot.y < targetY) bot.y += Math.min(bot.speed, targetY - bot.y);
+            if (bot.y > targetY) bot.y -= Math.min(bot.speed, bot.y - targetY);
+            
+            // Мяч
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            if (ball.y <= 0 || ball.y >= canvas.height) ball.dy *= -1;
+            
+            // Столкновения
+            if (ball.x <= 30 && ball.y > player.y && ball.y < player.y + player.height) {
+                ball.dx = Math.abs(ball.dx);
+                ball.x = 31;
+            }
+            
+            if (ball.x >= 460 && ball.y > bot.y && ball.y < bot.y + bot.height) {
+                ball.dx = -Math.abs(ball.dx);
+                ball.x = 459;
+            }
+            
+            // Голы
+            if (ball.x <= 0) {
+                game.botScore++;
+                resetBall();
+            }
+            if (ball.x >= canvas.width) {
+                game.playerScore++;
+                resetBall();
+            }
+            
+            updateScore();
+            
+            // Конец (5 очков)
+            if (game.playerScore >= 5 || game.botScore >= 5) {
+                game.active = false;
+                setTimeout(() => {
+                    alert(game.playerScore >= 5 ? "🎉 Вы победили!" : "🤖 Бот победил");
+                    backToMenu();
+                }, 500);
             }
         }
-    }
-    
-    function spawnBuffIcon() {
-        if (buffSystem.activeBuff || buffSystem.buffIcon.visible) return;
         
-        const buffTypes = Object.values(BUFFS);
-        const randomBuff = buffTypes[Math.floor(Math.random() * buffTypes.length)];
-        
-        buffSystem.buffIcon = {
-            x: 100 + Math.random() * (canvas.width - 200),
-            y: 80,
-            type: randomBuff,
-            visible: true,
-            speed: 0
-        };
-    }
-    
-    function activateBuff(buff) {
-        buffSystem.activeBuff = buff;
-        buffSystem.activeUntil = buff.duration;
-        
-        // Применение эффектов
-        if (buff.effect === 'size') {
-            ball.size = buffSystem.originalBallSize * buff.multiplier;
-        } else if (buff.effect === 'speed') {
-            ball.dx *= buff.multiplier;
-            ball.dy *= buff.multiplier;
-        } else if (buff.effect === 'color') {
-            buffSystem.hitsWithColor = 0;
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = 3 * (Math.random() > 0.5 ? 1 : -1);
         }
         
-        // Показать индикатор
-        document.getElementById('activeBuffInfo').style.display = 'block';
-    }
-    
-    function deactivateBuff() {
-        if (!buffSystem.activeBuff) return;
-        
-        // Отмена эффектов
-        const buff = buffSystem.activeBuff;
-        
-        if (buff.effect === 'size') {
-            ball.size = buffSystem.originalBallSize;
-        } else if (buff.effect === 'speed') {
-            ball.dx /= buff.multiplier;
-            ball.dy /= buff.multiplier;
-        } else if (buff.effect === 'color') {
-            ball.originalColor = '#FFFFFF';
+        function updateScore() {
+            document.getElementById('scoreDisplay').textContent = 
+                `${game.playerScore} : ${game.botScore}`;
         }
         
-        buffSystem.activeBuff = null;
-        document.getElementById('activeBuffInfo').style.display = 'none';
-    }
-    
-    function drawBuffs() {
-        // Отрисовка иконки бафа
-        if (buffSystem.buffIcon.visible) {
-            const icon = buffSystem.buffIcon;
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Свечение
-            ctx.shadowColor = icon.type.color;
-            ctx.shadowBlur = 15;
-            
-            // Круг иконки
-            ctx.fillStyle = icon.type.color;
+            // Линия
+            ctx.setLineDash([5, 10]);
             ctx.beginPath();
-            ctx.arc(icon.x, icon.y, 20, 0, Math.PI * 2);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = '#333';
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Ракетки
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            ctx.fillStyle = '#f44336';
+            ctx.fillRect(bot.x, bot.y, bot.width, bot.height);
+            
+            // Мяч
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
             ctx.fill();
             
-            // Иконка
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(icon.type.icon, icon.x, icon.y);
-            
-            // Сброс тени
-            ctx.shadowBlur = 0;
-            
-            // Подсказка
-            ctx.fillStyle = '#FF9800';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Собери!', icon.x, icon.y + 35);
-        }
-        
-        // Эффект для цветного мяча
-        if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
-            const buff = buffSystem.activeBuff;
-            const colorIndex = buffSystem.hitsWithColor % buff.colors.length;
-            ctx.fillStyle = buff.colors[colorIndex];
-        }
-    }
-    
-    // ========== ИГРОВАЯ ЛОГИКА ==========
-    function update() {
-        if (!game.active || game.paused) return;
-        
-        // Обновление бафов
-        updateBuffs();
-        
-        // Игрок
-        if ((keys['w'] || keys['arrowup']) && player.y > 0) {
-            player.y -= player.speed;
-        }
-        if ((keys['s'] || keys['arrowdown']) && player.y < canvas.height - player.height) {
-            player.y += player.speed;
-        }
-        
-        // AI
-        const diff = DIFFICULTY[game.difficulty];
-        let targetY = ball.y - opponent.height / 2;
-        
-        if (Math.random() > diff.aiAccuracy) {
-            targetY += (Math.random() - 0.5) * 70;
-        }
-        
-        if (opponent.y < targetY && opponent.y < canvas.height - opponent.height) {
-            opponent.y += Math.min(opponent.speed, targetY - opponent.y);
-        }
-        if (opponent.y > targetY && opponent.y > 0) {
-            opponent.y -= Math.min(opponent.speed, opponent.y - targetY);
-        }
-        
-        // Мяч
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-        
-        // Отскок от стен
-        if (ball.y <= ball.size || ball.y >= canvas.height - ball.size) {
-            ball.dy *= -1;
-            beep(600, 0.1);
-        }
-        
-        // Столкновения
-        const hitPlayer = ball.x - ball.size < player.x + player.width &&
-                        ball.x + ball.size > player.x &&
-                        ball.y > player.y && 
-                        ball.y < player.y + player.height;
-        
-        const hitOpponent = ball.x + ball.size > opponent.x &&
-                          ball.x - ball.size < opponent.x + opponent.width &&
-                          ball.y > opponent.y && 
-                          ball.y < opponent.y + opponent.height;
-        
-        if (hitPlayer) {
-            ball.dx = Math.abs(ball.dx);
-            ball.dy = 5 * ((ball.y - player.y) / player.height - 0.5);
-            ball.x = player.x + player.width + ball.size;
-            beep(800, 0.05);
-            
-            // Подсчет ударов для цветного бафа
-            if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
-                buffSystem.hitsWithColor++;
+            // Пауза
+            if (game.paused) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FFEB3B';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2);
             }
         }
         
-        if (hitOpponent) {
-            ball.dx = -Math.abs(ball.dx);
-            ball.dy = 5 * ((ball.y - opponent.y) / opponent.height - 0.5);
-            ball.x = opponent.x - ball.size;
-            beep(800, 0.05);
-            
-            // Подсчет ударов для цветного бафа
-            if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
-                buffSystem.hitsWithColor++;
-            }
+        function pauseGame() {
+            if (!game.active) return;
+            game.paused = !game.paused;
+            document.getElementById('pauseBtn').textContent = game.paused ? '▶ ПРОДОЛЖИТЬ' : '⏸ ПАУЗА';
         }
         
-        // Голы
-        if (ball.x - ball.size <= 0) {
-            game.opponentScore++;
-            
-            if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color' && 
-                buffSystem.activeBuff.bonusPoints) {
-                game.opponentScore += buffSystem.activeBuff.bonusPoints;
-            }
-            
+        function restartGame() {
+            game.playerScore = 0;
+            game.botScore = 0;
+            game.active = true;
+            game.paused = false;
             resetBall();
-            beep(300, 0.2);
+            updateScore();
+            document.getElementById('pauseBtn').textContent = '⏸ ПАУЗА';
         }
         
-        if (ball.x + ball.size >= canvas.width) {
-            game.playerScore++;
-            
-            if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color' && 
-                buffSystem.activeBuff.bonusPoints) {
-                game.playerScore += buffSystem.activeBuff.bonusPoints;
-            }
-            
-            resetBall();
-            beep(1000, 0.2);
+        function gameLoop() {
+            update();
+            draw();
+            if (game.active) requestAnimationFrame(gameLoop);
         }
         
-        updateScore();
-        
-        // Конец игры
-        if (game.playerScore >= 10 || game.opponentScore >= 10) {
-            endGame();
-        }
-    }
-    
-    function resetBall() {
-        ball.x = canvas.width / 2;
-        ball.y = canvas.height / 2;
-        ball.dx = game.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
-        ball.dy = game.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
-        
-        const config = DIFFICULTY[game.difficulty];
-        ball.dx = Math.sign(ball.dx) * config.ballSpeed;
-        ball.dy = Math.sign(ball.dy) * config.ballSpeed;
-        
-        ball.originalColor = '#FFFFFF';
-    }
-    
-    function updateScore() {
-        document.getElementById('scoreDisplay').textContent = 
-            `${game.playerScore} : ${game.opponentScore}`;
-    }
-    
-    // ========== КОНЕЦ ИГРЫ ==========
-    function endGame() {
-        game.active = false;
-        
-        deactivateBuff();
-        document.getElementById('buffsIndicator').style.display = 'none';
-        
-        const playerWon = game.playerScore >= 10;
-        const phrases = playerWon ? PHRASES.win : PHRASES.lose;
-        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-        
-        document.getElementById('gameOverTitle').textContent = 
-            playerWon ? "🎉 ПОБЕДА!" : "🎮 ИГРА ОКОНЧЕНА";
-        document.getElementById('gameMessage').textContent = phrase;
-        document.getElementById('finalScore').textContent = 
-            `${game.playerScore} : ${game.opponentScore}`;
-        
-        setTimeout(() => showScreen('gameOverScreen'), 500);
-    }
-    
-    function restartGame() {
-        showScreen('gameScreen');
-        initGame();
-    }
-    
-    // ========== ПАУЗА ==========
-    function pauseGame() {
-        if (!game.active) return;
-        
-        game.paused = !game.paused;
-        document.getElementById('pauseBtn').textContent = 
-            game.paused ? '▶ ПРОДОЛЖИТЬ' : '⏸ ПАУЗА';
-        
-        if (game.sound) beep(400, 0.1);
-    }
-    
-    // ========== ОТРИСОВКА ==========
-    function draw() {
-        // Фон
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Линия
-        ctx.setLineDash([5, 8]);
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, 0);
-        ctx.lineTo(canvas.width / 2, canvas.height);
-        ctx.strokeStyle = '#333';
-        ctx.stroke();
-        ctx.setLineDash([]);
-        
-        // Ракетки
-        ctx.fillStyle = '#4CAF50';
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-        
-        ctx.fillStyle = '#f44336';
-        ctx.fillRect(opponent.x, opponent.y, opponent.width, opponent.height);
-        
-        // Отрисовка бафов
-        drawBuffs();
-        
-        // Мяч
-        if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
-            // Цвет уже установлен в drawBuffs()
-        } else {
-            ctx.fillStyle = ball.originalColor;
-        }
-        
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Возвращаем стандартный цвет
-        ctx.fillStyle = '#FFFFFF';
-    }
-    
-    // ========== ИГРОВОЙ ЦИКЛ ==========
-    function gameLoop() {
-        if (!game.active) return;
-        
-        update();
-        draw();
-        
-        requestAnimationFrame(gameLoop);
-    }
-    
-    // ========== ЗАГРУЗКА НАСТРОЕК ==========
-    window.onload = function() {
-        // Загрузка сохраненных настроек
-        const saved = localStorage.getItem('pingpongSettings');
-        if (saved) {
-            const settings = JSON.parse(saved);
-            game.sound = settings.sound !== undefined ? settings.sound : true;
-            game.showMobile = settings.showMobile !== undefined ? settings.showMobile : true;
-            game.buffsEnabled = settings.buffsEnabled !== undefined ? settings.buffsEnabled : true;
-            game.ballSpeed = settings.ballSpeed || 5;
-            
-            document.getElementById('soundToggle').checked = game.sound;
-            document.getElementById('mobileButtons').checked = game.showMobile;
-            document.getElementById('buffsToggle').checked = game.buffsEnabled;
-            document.getElementById('ballSpeed').value = game.ballSpeed;
-            document.getElementById('speedValue').textContent = game.ballSpeed;
-        }
-        
-        // Скрыть мобильные кнопки если нужно
-        document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
-    };
-</script>
+        // Запуск
+        showScreen('menuScreen');
+    </script>
+</body>
+</html>
