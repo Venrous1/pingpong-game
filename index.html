@@ -488,13 +488,13 @@
         
         // Система бафов
         let buffSystem = {
-            cooldown: 900, // 30 секунд (60 FPS * 30)
-            activeBuff: null,
-            activeUntil: 0,
-            buffIcon: { x: 0, y: -50, type: null, visible: false, speed: 2 },
-            hitsWithColor: 0,
-            originalBallSize: 10,
-            originalBallSpeed: 5
+           cooldown: 900, // 15 секунд
+activeBuff: null,
+activeUntil: 0,
+buffIcon: { x: 0, y: 0, type: null, visible: false, speed: 2, timeLeft: 180 }, 
+hitsWithColor: 0,
+originalBallSize: 10,
+originalBallSpeed: 5
         };
         
         // ========== УПРАВЛЕНИЕ ЭКРАНАМИ ==========
