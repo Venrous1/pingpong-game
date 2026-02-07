@@ -660,13 +660,14 @@
         }
     }
     
-    // Обновление времени отображения статичного бафа ← ЭТО НОВЫЙ БЛОК!
+      // Обновление времени отображения статичного бафа
     if (buffSystem.buffIcon.visible) {
         buffSystem.buffIcon.timeLeft--;
         
-        // Мерцание перед исчезновением (последние 60 кадров)
-        if (buffSystem.buffIcon.timeLeft < 60) {
-            buffSystem.buffIcon.visible = (Math.floor(buffSystem.buffIcon.timeLeft / 10) % 2 === 0);
+        // Мерцание перед исчезновением (последние 120 кадров = 2 секунды)
+        if (buffSystem.buffIcon.timeLeft < 120) {
+            // Мерцает, но реже пропадает (виден 80% времени)
+            buffSystem.buffIcon.visible = (Math.floor(buffSystem.buffIcon.timeLeft / 15) % 4 !== 0);
         }
         
         // Если время вышло - скрыть баф
@@ -675,17 +676,30 @@
         }
     }
     
-    // Проверка столкновения с ракеткой
-    if (buffSystem.buffIcon.visible) {
-        const icon = buffSystem.buffIcon;
-        if (icon.x > player.x - 20 && icon.x < player.x + player.width + 20 &&
-            icon.y > player.y - 20 && icon.y < player.y + player.height + 20) {
-            
-            activateBuff(icon.type);
-            buffSystem.buffIcon.visible = false;
-            if (game.sound) beep(1200, 0.3);
-        }
-    }
+              // Проверка столкновения с ракеткой ИЛИ мячом
+            if (buffSystem.buffIcon.visible) {
+                const icon = buffSystem.buffIcon;
+                
+                // Проверка с ракеткой игрока
+                if (icon.x > player.x - 20 && icon.x < player.x + player.width + 20 &&
+                    icon.y > player.y - 20 && icon.y < player.y + player.height + 20) {
+                    
+                    activateBuff(icon.type);
+                    buffSystem.buffIcon.visible = false;
+                    if (game.sound) beep(1200, 0.3);
+                }
+                
+                // Проверка с мячом (дополнительная проверка)
+                const dx = ball.x - icon.x;
+                const dy = ball.y - icon.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < ball.size + 25) { // Если мяч близко к бафу
+                    activateBuff(icon.type);
+                    buffSystem.buffIcon.visible = false;
+                    if (game.sound) beep(1200, 0.3);
+                }
+            }
     
     // Обновление активного бафа
     if (buffSystem.activeBuff) {
