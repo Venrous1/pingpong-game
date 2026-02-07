@@ -2,455 +2,1053 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ping Pong Pro</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
-            user-select: none;
         }
         
-        body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Arial', sans-serif;
+        html, body {
+            width: 100%;
+            height: 100%;
             overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
             color: white;
         }
         
         .game-container {
-            text-align: center;
             width: 100%;
-            max-width: 800px;
-            padding: 20px;
-        }
-        
-        /* ЭКРАН МЕНЮ */
-        #menuScreen {
-            background: rgba(0, 0, 0, 0.85);
-            border: 3px solid #4CAF50;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 0 50px rgba(76, 175, 80, 0.5);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
         }
         
         .game-title {
-            font-size: 3.5rem;
-            margin-bottom: 10px;
+            text-align: center;
+            padding: 10px 0;
             color: #4CAF50;
-            text-shadow: 0 0 20px #4CAF50;
-            letter-spacing: 2px;
+            font-size: 28px;
+            text-shadow: 0 0 10px #4CAF50;
+            margin-bottom: 10px;
         }
         
-        .subtitle {
-            font-size: 1.2rem;
-            margin-bottom: 40px;
-            color: #aaa;
+        .version {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 20px;
         }
         
-        /* КНОПКИ МЕНЮ */
-        .menu-btn {
-            display: block;
-            width: 80%;
-            max-width: 400px;
-            margin: 15px auto;
-            padding: 18px;
-            font-size: 1.5rem;
-            background: linear-gradient(145deg, #2e7d32, #1b5e20);
-            color: white;
-            border: 3px solid #4CAF50;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-        
-        .menu-btn:hover {
-            transform: scale(1.05);
-            background: linear-gradient(145deg, #388e3c, #2e7d32);
-            box-shadow: 0 0 20px #4CAF50;
-        }
-        
-        /* ЭКРАН ВЫБОРА СЛОЖНОСТИ */
-        #difficultyScreen, #settingsScreen {
-            background: rgba(0, 0, 0, 0.9);
-            border: 3px solid #2196F3;
-            border-radius: 20px;
-            padding: 30px;
+        .screen {
             display: none;
-        }
-        
-        .difficulty-btn {
-            background: linear-gradient(145deg, #1976d2, #0d47a1);
-            border-color: #2196F3;
-        }
-        
-        .difficulty-btn:hover {
-            background: linear-gradient(145deg, #2196F3, #1976d2);
-            box-shadow: 0 0 20px #2196F3;
-        }
-        
-        /* ИГРОВОЕ ПОЛЕ */
-        #gameScreen {
-            display: none;
-        }
-        
-        #gameCanvas {
-            background: #000;
-            border: 4px solid #fff;
-            border-radius: 10px;
-            display: block;
-            margin: 20px auto;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
-        }
-        
-        .game-header {
-            display: flex;
-            justify-content: space-between;
+            flex: 1;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            margin-bottom: 15px;
+            padding: 15px;
+            width: 100%;
+        }
+        
+        #menuScreen { display: flex; }
+        
+        .menu-buttons {
+            width: 100%;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .menu-btn {
+            padding: 16px;
+            font-size: 18px;
+            background: #2E7D32;
+            color: white;
+            border: 2px solid #4CAF50;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            width: 100%;
+            transition: transform 0.1s;
+        }
+        
+        .menu-btn:active {
+            transform: scale(0.97);
+            background: #388E3C;
+        }
+        
+        .menu-info {
+            margin-top: 30px;
+            color: #aaa;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.4;
             padding: 0 10px;
         }
         
+        #gameScreen {
+            justify-content: flex-start;
+            padding: 5px;
+        }
+        
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+        
         .score {
-            font-size: 2rem;
+            font-size: 24px;
             font-weight: bold;
             color: #FFEB3B;
-            text-shadow: 0 0 10px yellow;
+            min-width: 80px;
         }
         
-        .difficulty-display {
-            font-size: 1.2rem;
-            color: #4CAF50;
+        .difficulty-badge {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #333;
         }
         
-        /* ПАНЕЛЬ УПРАВЛЕНИЯ */
-        .controls {
-            margin-top: 20px;
+        .easy-badge { background: #4CAF50; }
+        .hard-badge { background: #FF9800; }
+        .ultra-badge { background: #f44336; }
+        
+        #gameCanvas {
+            background: #000;
+            border: 2px solid white;
+            border-radius: 5px;
+            display: block;
+            width: 100%;
+            height: 50vh;
+            max-height: 400px;
+        }
+        
+        .game-controls {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 0 10px;
         }
         
         .control-btn {
-            padding: 12px 25px;
-            margin: 0 10px;
-            font-size: 1.2rem;
+            padding: 12px 20px;
+            font-size: 16px;
             background: #333;
             color: white;
-            border: 2px solid #fff;
+            border: 2px solid #666;
             border-radius: 10px;
             cursor: pointer;
-        }
-        
-        /* МОБИЛЬНОЕ УПРАВЛЕНИЕ */
-        .mobile-controls {
-            display: none;
-            margin-top: 20px;
-            gap: 30px;
-            justify-content: center;
-        }
-        
-        .control-btn {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #333, #222);
-            border: 3px solid #fff;
-            color: white;
-            font-size: 30px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.1s;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            flex: 1;
+            max-width: 150px;
+            text-align: center;
         }
         
         .control-btn:active {
-            transform: scale(0.95);
-            background: linear-gradient(145deg, #444, #333);
+            background: #444;
         }
         
-        /* АДАПТИВНОСТЬ */
-        @media (max-width: 500px) {
-            .game-title { font-size: 1.5rem; }
-            .score-display { font-size: 1.2rem; }
-            #gameCanvas { 
-                width: 95vw; 
-                height: auto; 
-                max-height: 60vh;
-            }
-            .mobile-controls { display: flex; }
-            .control-btn {
-                width: 70px;
-                height: 70px;
-                font-size: 25px;
-            }
+        .mobile-game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            width: 100%;
+            padding: 0 20px;
         }
         
-        @media (max-height: 600px) {
-            body { padding: 10px; }
-            .game-header { margin-bottom: 10px; }
+        .mobile-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #444, #222);
+            border: 3px solid white;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
         }
         
-        /* АНИМАЦИЯ ПУЛЬСАЦИИ */
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
+        .mobile-btn:active {
+            transform: scale(0.9);
+            background: linear-gradient(145deg, #555, #333);
         }
         
-        .pulse {
-            animation: pulse 2s infinite;
+        #gameOverScreen { 
+            text-align: center; 
+            justify-content: center; 
+        }
+        
+        .game-over-title {
+            font-size: 28px;
+            color: #f44336;
+            margin-bottom: 15px;
+        }
+        
+        .game-message {
+            font-size: 18px;
+            color: #FF9800;
+            margin: 15px 0;
+            padding: 0 10px;
+        }
+        
+        .final-score {
+            font-size: 32px;
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .settings-group {
+            width: 100%;
+            max-width: 300px;
+            background: #111;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .setting-item {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .setting-label {
+            font-size: 16px;
+            color: #ccc;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .buffs-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 2px solid #FF9800;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .buff-active {
+            color: #FF9800;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 480px) {
+            .game-title { font-size: 24px; }
+            .menu-btn { padding: 14px; font-size: 16px; }
+            .score { font-size: 20px; }
+            .control-btn { padding: 10px; font-size: 14px; }
+            .mobile-btn { width: 60px; height: 60px; font-size: 20px; }
+            .game-over-title { font-size: 24px; }
+            .game-message { font-size: 16px; }
+            .final-score { font-size: 28px; }
+            .buffs-indicator { top: 5px; right: 5px; padding: 5px 8px; font-size: 12px; }
+        }
+        
+        @media (max-height: 700px) {
+            #gameCanvas { height: 45vh; }
+            .game-header { margin-bottom: 5px; }
+            .game-controls { margin-top: 10px; }
+            .mobile-game-controls { margin-top: 10px; }
+        }
+        
+        .back-btn {
+            background: #555 !important;
+            border-color: #777 !important;
+            margin-top: 20px;
+        }
+        
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <!-- ЗАГОЛОВОК -->
-        <div class="game-header">
-            <h1 class="game-title">🎮 ПИНГ-ПОНГ</h1>
-            <div class="score-display">СЧЕТ: <span id="score">0 : 0</span></div>
-            <p class="controls-info pulse">Управление: W/S или стрелки ↑↓</p>
+        <div id="menuScreen" class="screen">
+            <h1 class="game-title">PING PONG PRO</h1>
+            <div class="version">Версия 1.3 с плавным AI</div>
+            
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="startGame()">▶ НАЧАТЬ ИГРУ</button>
+                <button class="menu-btn" onclick="showScreen('difficultyScreen')">⚙ СЛОЖНОСТЬ</button>
+                <button class="menu-btn" onclick="showScreen('settingsScreen')">🔧 НАСТРОЙКИ</button>
+            </div>
+            
+            <div class="menu-info">
+                <p>🎮 <strong>Управление:</strong></p>
+                <p>Компьютер: W/S или стрелки</p>
+                <p>Телефон: кнопки ↓</p>
+                <p>Пауза: Пробел или кнопка ⏸</p>
+                <p style="color:#FF9800; margin-top:10px;">⚡ Улучшенный плавный AI!</p>
+            </div>
         </div>
         
-        <!-- ИГРОВОЕ ПОЛЕ -->
-        <canvas id="gameCanvas" width="400" height="300"></canvas>
+        <div id="difficultyScreen" class="screen">
+            <h2 style="color:#4CAF50; margin-bottom:25px;">🎯 СЛОЖНОСТЬ</h2>
+            
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="setDifficulty('easy')">🟢 ЛЕГКАЯ</button>
+                <button class="menu-btn" onclick="setDifficulty('hard')">🟡 СЛОЖНАЯ</button>
+                <button class="menu-btn" onclick="setDifficulty('ultra')">🔴 УЛЬТРА</button>
+                <button class="menu-btn back-btn" onclick="backToMenu()">← НАЗАД</button>
+            </div>
+        </div>
         
-        <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ -->
-        <div class="mobile-controls">
-            <button class="control-btn" id="upBtn">↑</button>
-            <button class="control-btn" id="downBtn">↓</button>
+        <div id="settingsScreen" class="screen">
+            <h2 style="color:#FF9800; margin-bottom:25px;">🔧 НАСТРОЙКИ</h2>
+            
+            <div class="settings-group">
+                <div class="setting-item">
+                    <span class="setting-label">🔊 Звуки</span>
+                    <input type="checkbox" id="soundToggle" checked>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">📱 Кнопки на экране</span>
+                    <input type="checkbox" id="mobileButtons" checked>
+                </div>
+                
+                <div class="setting-item">
+                    <span class="setting-label">🎮 Система бафов</span>
+                    <input type="checkbox" id="buffsToggle" checked>
+                </div>
+                
+                <div class="setting-item" style="flex-direction:column; align-items:stretch;">
+                    <span class="setting-label">⚡ Скорость: <span id="speedValue">5</span></span>
+                    <input type="range" id="ballSpeed" min="3" max="8" value="5">
+                </div>
+            </div>
+            
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="saveSettings()">💾 СОХРАНИТЬ</button>
+                <button class="menu-btn back-btn" onclick="backToMenu()">← НАЗАД</button>
+            </div>
+        </div>
+        
+        <div id="gameOverScreen" class="screen">
+            <h2 class="game-over-title" id="gameOverTitle">ИГРА ОКОНЧЕНА</h2>
+            <div class="game-message" id="gameMessage"></div>
+            <div class="final-score" id="finalScore">0 : 0</div>
+            
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="restartGame()">🔄 ИГРАТЬ СНОВА</button>
+                <button class="menu-btn" onclick="backToMenu()">🏠 В МЕНЮ</button>
+            </div>
+        </div>
+        
+        <div id="gameScreen" class="screen">
+            <div class="game-header">
+                <div class="score" id="scoreDisplay">0 : 0</div>
+                <div class="difficulty-badge easy-badge" id="difficultyBadge">ЛЕГКАЯ</div>
+            </div>
+            
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="buffs-indicator" id="buffsIndicator">
+                <span id="buffStatus">Бафы: 🟢 Вкл</span>
+                <div id="activeBuffInfo" class="buff-active" style="display:none; margin-top:5px;"></div>
+            </div>
+            
+            <div class="game-controls">
+                <button class="control-btn" onclick="pauseGame()" id="pauseBtn">⏸ ПАУЗА</button>
+                <button class="control-btn" onclick="backToMenu()">🏠 МЕНЮ</button>
+            </div>
+            
+            <div class="mobile-game-controls" id="mobileControls">
+                <button class="mobile-btn" id="upBtn">↑</button>
+                <button class="mobile-btn" onclick="pauseGame()">⏸</button>
+                <button class="mobile-btn" id="downBtn">↓</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // ========== КОНСТАНТЫ И НАСТРОЙКИ ==========
-        const CANVAS_WIDTH = 400;
-        const CANVAS_HEIGHT = 300;
-        const PADDLE_WIDTH = 8;
-        const PADDLE_HEIGHT = 60;
-        const BALL_SIZE = 8;
-        const PLAYER_SPEED = 6;
-        const WINNING_SCORE = 5;  // ТОЛЬКО 5 ОЧКОВ ДЛЯ ПОБЕДЫ!
+        // ========== КОНФИГУРАЦИЯ ==========
+        const DIFFICULTY = {
+            easy: { ballSpeed: 4, aiSpeed: 3, aiAccuracy: 0.7 },
+            hard: { ballSpeed: 5, aiSpeed: 4, aiAccuracy: 0.8 },
+            ultra: { ballSpeed: 6, aiSpeed: 5, aiAccuracy: 0.9 }
+        };
         
-        // ========== ПЕРЕМЕННЫЕ ИГРЫ ==========
-        let canvas, ctx, scoreElement;
+        const PHRASES = {
+            win: [
+                "Победа! 🏆", "Отлично! 🎯", "AI повержен! 🤖", 
+                "Мастер пинг-понга! 👑", "Браво! ✨", "Невероятно! 🚀"
+            ],
+            lose: [
+                "Игра окончена", "Попробуйте ещё! 🔄", "AI сильнее...", 
+                "Почти получилось! ⚡", "Тренируйтесь! 🏓", "В следующий раз! 💪"
+            ]
+        };
+        
+        // ========== СИСТЕМА БАФОВ ==========
+        const BUFFS = {
+            BIG_BALL: {
+                id: 'big_ball',
+                name: '🔥 Большой мяч',
+                duration: 240,
+                effect: 'size',
+                multiplier: 2.0,
+                color: '#FF9800',
+                icon: '🔥'
+            },
+            SPEED_BOOST: {
+                id: 'speed_boost',
+                name: '⚡ Ускорение',
+                duration: 180,
+                effect: 'speed',
+                multiplier: 1.5,
+                color: '#2196F3',
+                icon: '⚡'
+            },
+            COLOR_CHANGE: {
+                id: 'color_change',
+                name: '🌈 Цветной мяч',
+                duration: 300,
+                effect: 'color',
+                colors: ['#FF5252', '#4CAF50', '#2196F3', '#FFEB3B', '#E91E63'],
+                icon: '🌈',
+                bonusPoints: 1
+            }
+        };
+        
+        // ========== СОСТОЯНИЕ ИГРЫ ==========
+        let canvas, ctx;
+        let game = {
+            active: false,
+            paused: false,
+            difficulty: 'easy',
+            playerScore: 0,
+            opponentScore: 0,
+            sound: true,
+            showMobile: true,
+            ballSpeed: 5,
+            buffsEnabled: true
+        };
+        
+        // Игровые объекты
         let player, opponent, ball;
         let keys = {};
-        let gameActive = true;
         
-        // ========== ИНИЦИАЛИЗАЦИЯ ==========
-        function init() {
-            // Получаем элементы DOM
+        // Переменные для плавного AI
+        let aiTargetY = 0;
+        let aiSmoothY = 0;
+        
+        // Система бафов
+        let buffSystem = {
+            cooldown: 1800,
+            activeBuff: null,
+            activeUntil: 0,
+            buffIcon: { x: 0, y: -50, type: null, visible: false, speed: 2 },
+            hitsWithColor: 0,
+            originalBallSize: 10,
+            originalBallSpeed: 5
+        };
+        
+        // ========== ЗВУКИ ==========
+        function beep(freq, duration) {
+            if (!game.sound) return;
+            
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = freq;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                // Аудио не поддерживается
+            }
+        }
+        
+        // ========== УПРАВЛЕНИЕ ЭКРАНАМИ ==========
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            const screen = document.getElementById(screenId);
+            if (screen) {
+                screen.style.display = 'flex';
+            }
+        }
+        
+        function backToMenu() {
+            game.active = false;
+            showScreen('menuScreen');
+        }
+        
+        function setDifficulty(diff) {
+            game.difficulty = diff;
+            const names = { easy: 'ЛЕГКАЯ', hard: 'СЛОЖНАЯ', ultra: 'УЛЬТРА' };
+            const colors = { easy: 'easy-badge', hard: 'hard-badge', ultra: 'ultra-badge' };
+            
+            document.getElementById('difficultyBadge').textContent = names[diff];
+            document.getElementById('difficultyBadge').className = `difficulty-badge ${colors[diff]}`;
+            
+            localStorage.setItem('pingpongDifficulty', diff);
+            backToMenu();
+        }
+        
+        function saveSettings() {
+            game.sound = document.getElementById('soundToggle').checked;
+            game.showMobile = document.getElementById('mobileButtons').checked;
+            game.buffsEnabled = document.getElementById('buffsToggle').checked;
+            game.ballSpeed = parseInt(document.getElementById('ballSpeed').value);
+            document.getElementById('speedValue').textContent = game.ballSpeed;
+            
+            document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
+            localStorage.setItem('pingpongSettings', JSON.stringify(game));
+            
+            backToMenu();
+        }
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ ==========
+        function startGame() {
+            showScreen('gameScreen');
+            initGame();
+        }
+        
+        function initGame() {
+            // Canvas
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
-            scoreElement = document.getElementById('score');
             
-            // Инициализируем игровые объекты
+            // Автоматический размер
+            const container = canvas.parentElement;
+            const maxWidth = Math.min(500, container.clientWidth - 20);
+            canvas.width = maxWidth;
+            canvas.height = Math.min(400, window.innerHeight * 0.5);
+            
+            // Объекты
             player = {
-                x: 10,
-                y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
-                score: 0
+                x: 15,
+                y: canvas.height / 2 - 50,
+                width: 10,
+                height: 100,
+                speed: 6
             };
             
             opponent = {
-                x: CANVAS_WIDTH - PADDLE_WIDTH - 10,
-                y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
-                score: 0
+                x: canvas.width - 25,
+                y: canvas.height / 2 - 50,
+                width: 10,
+                height: 100,
+                speed: DIFFICULTY[game.difficulty].aiSpeed
             };
             
             ball = {
-                x: CANVAS_WIDTH / 2,
-                y: CANVAS_HEIGHT / 2,
-                dx: 3 * (Math.random() > 0.5 ? 1 : -1),
-                dy: 2 * (Math.random() > 0.5 ? 1 : -1)
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                size: 10,
+                dx: game.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
+                dy: game.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
+                originalColor: '#FFFFFF'
             };
             
-            // Настраиваем управление
-            setupControls();
+            // Сброс состояния
+            game.playerScore = 0;
+            game.opponentScore = 0;
+            game.active = true;
+            game.paused = false;
             
-            // Запускаем игровой цикл
+            // Сброс системы бафов
+            buffSystem = {
+                cooldown: 1800,
+                activeBuff: null,
+                activeUntil: 0,
+                buffIcon: { x: 0, y: -50, type: null, visible: false, speed: 2 },
+                hitsWithColor: 0,
+                originalBallSize: ball.size,
+                originalBallSpeed: game.ballSpeed
+            };
+            
+            // Инициализация AI
+            aiTargetY = canvas.height / 2 - opponent.height / 2;
+            aiSmoothY = aiTargetY;
+            
+            // Показать индикатор бафов
+            document.getElementById('buffsIndicator').style.display = 'block';
+            document.getElementById('buffStatus').textContent = 
+                game.buffsEnabled ? 'Бафы: 🟢 Вкл' : 'Бафы: 🔴 Выкл';
+            document.getElementById('activeBuffInfo').style.display = 'none';
+            
+            updateScore();
+            setupControls();
+            document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
+            document.getElementById('pauseBtn').textContent = '⏸ ПАУЗА';
+            
             gameLoop();
         }
         
         // ========== УПРАВЛЕНИЕ ==========
         function setupControls() {
-            // Клавиатура
-            window.addEventListener('keydown', (e) => {
-                const key = e.key.toLowerCase();
-                if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
-                    keys[key] = true;
-                    e.preventDefault();
-                }
-            });
+            keys = {};
             
-            window.addEventListener('keyup', (e) => {
+            // Клавиатура
+            document.onkeydown = (e) => {
+                const key = e.key.toLowerCase();
+                if (['w', 's', 'arrowup', 'arrowdown', ' ', 'p'].includes(key)) {
+                    keys[key] = true;
+                    if ((key === ' ' || key === 'p') && game.active) {
+                        pauseGame();
+                        e.preventDefault();
+                    }
+                }
+            };
+            
+            document.onkeyup = (e) => {
                 const key = e.key.toLowerCase();
                 if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
                     keys[key] = false;
                 }
-            });
+            };
             
             // Мобильные кнопки
             const upBtn = document.getElementById('upBtn');
             const downBtn = document.getElementById('downBtn');
             
-            upBtn.addEventListener('touchstart', () => keys['arrowup'] = true);
-            upBtn.addEventListener('touchend', () => keys['arrowup'] = false);
-            downBtn.addEventListener('touchstart', () => keys['arrowdown'] = true);
-            downBtn.addEventListener('touchend', () => keys['arrowdown'] = false);
+            upBtn.ontouchstart = upBtn.onmousedown = () => {
+                keys['arrowup'] = true;
+            };
             
-            // Также для мыши (на компьютере)
-            upBtn.addEventListener('mousedown', () => keys['arrowup'] = true);
-            upBtn.addEventListener('mouseup', () => keys['arrowup'] = false);
-            upBtn.addEventListener('mouseleave', () => keys['arrowup'] = false);
-            downBtn.addEventListener('mousedown', () => keys['arrowdown'] = true);
-            downBtn.addEventListener('mouseup', () => keys['arrowdown'] = false);
-            downBtn.addEventListener('mouseleave', () => keys['arrowdown'] = false);
+            upBtn.ontouchend = upBtn.onmouseup = upBtn.onmouseleave = () => {
+                keys['arrowup'] = false;
+            };
+            
+            downBtn.ontouchstart = downBtn.onmousedown = () => {
+                keys['arrowdown'] = true;
+            };
+            
+            downBtn.ontouchend = downBtn.onmouseup = downBtn.onmouseleave = () => {
+                keys['arrowdown'] = false;
+            };
         }
         
-        // ========== ОБНОВЛЕНИЕ ИГРЫ ==========
-        function update() {
-            if (!gameActive) return;
+        // ========== СИСТЕМА БАФОВ ==========
+        function updateBuffs() {
+            if (!game.buffsEnabled || !game.active) return;
             
-            // Движение игрока
-            if ((keys['w'] || keys['arrowup']) && player.y > 0) {
-                player.y -= PLAYER_SPEED;
-            }
-            if ((keys['s'] || keys['arrowdown']) && player.y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
-                player.y += PLAYER_SPEED;
-            }
-            
-            // БОТ СЛАБЫЙ - СДЕЛАЕМ ЕГО ПРОСТЫМ
-            let botError = Math.random() * 50 - 25; // Большая ошибка
-            let botDelay = Math.random() > 0.3; // Иногда запаздывает
-            
-            if (botDelay) {
-                // Иногда бот просто стоит
-                if (Math.random() > 0.7) {
-                    let targetY = ball.y - PADDLE_HEIGHT/2 + botError;
-                    if (opponent.y < targetY && opponent.y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
-                        opponent.y += 2;
-                    }
-                    if (opponent.y > targetY && opponent.y > 0) {
-                        opponent.y -= 2;
-                    }
+            // Таймер перезарядки
+            if (buffSystem.cooldown > 0 && !buffSystem.buffIcon.visible) {
+                buffSystem.cooldown--;
+                
+                // Появление иконки бафа
+                if (buffSystem.cooldown <= 0) {
+                    spawnBuffIcon();
+                    buffSystem.cooldown = 1800;
                 }
             }
             
-            // Движение мяча
+            // Движение иконки бафа
+            if (buffSystem.buffIcon.visible) {
+                buffSystem.buffIcon.y += buffSystem.buffIcon.speed;
+                
+                // Если упала за экран
+                if (buffSystem.buffIcon.y > canvas.height + 30) {
+                    buffSystem.buffIcon.visible = false;
+                }
+            }
+            
+            // Проверка столкновения с ракеткой
+            if (buffSystem.buffIcon.visible) {
+                const icon = buffSystem.buffIcon;
+                if (icon.x > player.x - 20 && icon.x < player.x + player.width + 20 &&
+                    icon.y > player.y - 20 && icon.y < player.y + player.height + 20) {
+                    
+                    activateBuff(icon.type);
+                    buffSystem.buffIcon.visible = false;
+                    if (game.sound) beep(1200, 0.3);
+                }
+            }
+            
+            // Обновление активного бафа
+            if (buffSystem.activeBuff) {
+                buffSystem.activeUntil--;
+                
+                // Обновление индикатора
+                const secondsLeft = Math.ceil(buffSystem.activeUntil / 60);
+                document.getElementById('activeBuffInfo').textContent = 
+                    `${buffSystem.activeBuff.icon} ${buffSystem.activeBuff.name}: ${secondsLeft}с`;
+                
+                if (buffSystem.activeUntil <= 0) {
+                    deactivateBuff();
+                }
+            }
+        }
+        
+        function spawnBuffIcon() {
+            if (buffSystem.activeBuff || buffSystem.buffIcon.visible) return;
+            
+            const buffTypes = Object.values(BUFFS);
+            const randomBuff = buffTypes[Math.floor(Math.random() * buffTypes.length)];
+            
+            buffSystem.buffIcon = {
+                x: 50 + Math.random() * (canvas.width - 100),
+                y: -30,
+                type: randomBuff,
+                visible: true,
+                speed: 2 + Math.random() * 2
+            };
+        }
+        
+        function activateBuff(buff) {
+            buffSystem.activeBuff = buff;
+            buffSystem.activeUntil = buff.duration;
+            
+            // Применение эффектов
+            if (buff.effect === 'size') {
+                ball.size = buffSystem.originalBallSize * buff.multiplier;
+            } else if (buff.effect === 'speed') {
+                ball.dx *= buff.multiplier;
+                ball.dy *= buff.multiplier;
+            } else if (buff.effect === 'color') {
+                buffSystem.hitsWithColor = 0;
+            }
+            
+            // Показать индикатор
+            document.getElementById('activeBuffInfo').style.display = 'block';
+        }
+        
+        function deactivateBuff() {
+            if (!buffSystem.activeBuff) return;
+            
+            // Отмена эффектов
+            const buff = buffSystem.activeBuff;
+            
+            if (buff.effect === 'size') {
+                ball.size = buffSystem.originalBallSize;
+            } else if (buff.effect === 'speed') {
+                ball.dx /= buff.multiplier;
+                ball.dy /= buff.multiplier;
+            } else if (buff.effect === 'color') {
+                // Возврат обычного цвета
+                ball.originalColor = '#FFFFFF';
+            }
+            
+            buffSystem.activeBuff = null;
+            document.getElementById('activeBuffInfo').style.display = 'none';
+        }
+        
+        function drawBuffs() {
+            // Отрисовка иконки бафа
+            if (buffSystem.buffIcon.visible) {
+                const icon = buffSystem.buffIcon;
+                
+                // Свечение
+                ctx.shadowColor = icon.type.color;
+                ctx.shadowBlur = 15;
+                
+                // Круг иконки
+                ctx.fillStyle = icon.type.color;
+                ctx.beginPath();
+                ctx.arc(icon.x, icon.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Иконка
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(icon.type.icon, icon.x, icon.y);
+                
+                // Сброс тени
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // ========== ИГРОВАЯ ЛОГИКА ==========
+        function update() {
+            if (!game.active || game.paused) return;
+            
+            // Обновление бафов
+            updateBuffs();
+            
+            // Игрок
+            if ((keys['w'] || keys['arrowup']) && player.y > 0) {
+                player.y -= player.speed;
+            }
+            if ((keys['s'] || keys['arrowdown']) && player.y < canvas.height - player.height) {
+                player.y += player.speed;
+            }
+            
+            // ========== ПЛАВНЫЙ AI ==========
+            const config = DIFFICULTY[game.difficulty];
+            
+            // Цель - центр мяча
+            if (Math.random() > config.aiAccuracy) {
+                // Иногда ошибается (для реалистичности)
+                aiTargetY = ball.y - opponent.height / 2 + (Math.random() - 0.5) * 50;
+            } else {
+                aiTargetY = ball.y - opponent.height / 2;
+            }
+            
+            // Плавное следование к цели
+            const smoothFactor = 0.15;
+            aiSmoothY += (aiTargetY - aiSmoothY) * smoothFactor;
+            
+            // Ограничение AI, чтобы не выходил за границы
+            aiSmoothY = Math.max(0, Math.min(canvas.height - opponent.height, aiSmoothY));
+            
+            // Установка позиции AI
+            opponent.y = aiSmoothY;
+            
+            // Мяч
             ball.x += ball.dx;
             ball.y += ball.dy;
             
-            // Отскок от верхней/нижней границы
-            if (ball.y - BALL_SIZE <= 0 || ball.y + BALL_SIZE >= CANVAS_HEIGHT) {
+            // Отскок от стен
+            if (ball.y <= ball.size || ball.y >= canvas.height - ball.size) {
                 ball.dy *= -1;
+                beep(600, 0.1);
             }
             
-            // Проверка столкновения с игроком
-            if (ball.x - BALL_SIZE <= player.x + PADDLE_WIDTH &&
-                ball.x + BALL_SIZE >= player.x &&
-                ball.y >= player.y &&
-                ball.y <= player.y + PADDLE_HEIGHT) {
-                
+            // Столкновения
+            const hitPlayer = ball.x - ball.size < player.x + player.width &&
+                            ball.x + ball.size > player.x &&
+                            ball.y > player.y && 
+                            ball.y < player.y + player.height;
+            
+            const hitOpponent = ball.x + ball.size > opponent.x &&
+                              ball.x - ball.size < opponent.x + opponent.width &&
+                              ball.y > opponent.y && 
+                              ball.y < opponent.y + opponent.height;
+            
+            if (hitPlayer) {
                 ball.dx = Math.abs(ball.dx);
-                ball.x = player.x + PADDLE_WIDTH + BALL_SIZE;
-            }
-            
-            // Проверка столкновения с ботом (с ошибкой)
-            let botHitChance = 0.8; // 80% шанс отбить
-            if (Math.random() < botHitChance) {
-                if (ball.x + BALL_SIZE >= opponent.x &&
-                    ball.x - BALL_SIZE <= opponent.x + PADDLE_WIDTH &&
-                    ball.y >= opponent.y &&
-                    ball.y <= opponent.y + PADDLE_HEIGHT) {
-                    
-                    ball.dx = -Math.abs(ball.dx);
-                    ball.x = opponent.x - BALL_SIZE;
+                ball.dy = 5 * ((ball.y - player.y) / player.height - 0.5);
+                ball.x = player.x + player.width + ball.size;
+                beep(800, 0.05);
+                
+                // Подсчет ударов для цветного бафа
+                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
+                    buffSystem.hitsWithColor++;
                 }
             }
             
-            // Проверка голов
-            if (ball.x - BALL_SIZE <= 0) {
-                opponent.score++;
-                resetBall();
-            }
-            if (ball.x + BALL_SIZE >= CANVAS_WIDTH) {
-                player.score++;
-                resetBall();
+            if (hitOpponent) {
+                ball.dx = -Math.abs(ball.dx);
+                ball.dy = 5 * ((ball.y - opponent.y) / opponent.height - 0.5);
+                ball.x = opponent.x - ball.size;
+                beep(800, 0.05);
+                
+                // Подсчет ударов для цветного бафа
+                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
+                    buffSystem.hitsWithColor++;
+                }
             }
             
-            // Обновление счета
-            scoreElement.textContent = `${player.score} : ${opponent.score}`;
-            
-            // Проверка победы (ТОЛЬКО 5 ОЧКОВ!)
-            if (player.score >= WINNING_SCORE || opponent.score >= WINNING_SCORE) {
-                gameActive = false;
-                setTimeout(() => {
-                    alert(player.score >= WINNING_SCORE ? 
-                        "🎉 ВЫ ПОБЕДИЛИ! 🏆" : "🤖 Бот победил... Попробуйте еще!");
-                    resetGame();
-                }, 100);
+            // Голы
+            if (ball.x - ball.size <= 0) {
+                game.opponentScore++;
+                
+                // Бонусные очки для цветного бафа
+                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color' && 
+                    buffSystem.activeBuff.bonusPoints) {
+                    game.opponentScore += buffSystem.activeBuff.bonusPoints;
+                }
+                
+                resetBall();
+                beep(300, 0.2);
             }
+            
+            if (ball.x + ball.size >= canvas.width) {
+                game.playerScore++;
+                
+                // Бонусные очки для цветного бафа
+                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color' && 
+                    buffSystem.activeBuff.bonusPoints) {
+                    game.playerScore += buffSystem.activeBuff.bonusPoints;
+                }
+                
+                resetBall();
+                beep(1000, 0.2);
+            }
+            
+            updateScore();
+            
+            // Конец игры
+            if (game.playerScore >= 10 || game.opponentScore >= 10) {
+                endGame();
+            }
+        }
+        
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = game.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = game.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
+            
+            // Применяем настройки сложности
+            const config = DIFFICULTY[game.difficulty];
+            ball.dx = Math.sign(ball.dx) * config.ballSpeed;
+            ball.dy = Math.sign(ball.dy) * config.ballSpeed;
+            
+            // Возвращаем оригинальный цвет
+            ball.originalColor = '#FFFFFF';
+        }
+        
+        function updateScore() {
+            document.getElementById('scoreDisplay').textContent = 
+                `${game.playerScore} : ${game.opponentScore}`;
+        }
+        
+        // ========== КОНЕЦ ИГРЫ ==========
+        function endGame() {
+            game.active = false;
+            
+            // Деактивация бафов
+            deactivateBuff();
+            document.getElementById('buffsIndicator').style.display = 'none';
+            
+            const playerWon = game.playerScore >= 10;
+            const phrases = playerWon ? PHRASES.win : PHRASES.lose;
+            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+            
+            document.getElementById('gameOverTitle').textContent = 
+                playerWon ? "🎉 ПОБЕДА!" : "🎮 ИГРА ОКОНЧЕНА";
+            document.getElementById('gameMessage').textContent = phrase;
+            document.getElementById('finalScore').textContent = 
+                `${game.playerScore} : ${game.opponentScore}`;
+            
+            setTimeout(() => showScreen('gameOverScreen'), 500);
+        }
+        
+        function restartGame() {
+            showScreen('gameScreen');
+            initGame();
+        }
+        
+        // ========== ПАУЗА ==========
+        function pauseGame() {
+            if (!game.active) return;
+            
+            game.paused = !game.paused;
+            document.getElementById('pauseBtn').textContent = 
+                game.paused ? '▶ ПРОДОЛЖИТЬ' : '⏸ ПАУЗА';
+            
+            if (game.sound) beep(400, 0.1);
         }
         
         // ========== ОТРИСОВКА ==========
         function draw() {
-            // Очистка холста
+            // Фон
             ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Центральная линия
-            ctx.setLineDash([5, 10]);
+            // Линия
+            ctx.setLineDash([5, 8]);
             ctx.beginPath();
-            ctx.moveTo(CANVAS_WIDTH / 2, 0);
-            ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = '#333';
             ctx.stroke();
             ctx.setLineDash([]);
             
             // Ракетки
             ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(player.x, player.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillRect(player.x, player.y, player.width, player.height);
             
-            ctx.fillStyle = '#FF5252';
-            ctx.fillRect(opponent.x, opponent.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillStyle = '#f44336';
+            ctx.fillRect(opponent.x, opponent.y, opponent.width, opponent.height);
             
-            // Мяч
-            ctx.fillStyle = '#FFFFFF';
+            // Отрисовка бафов
+            drawBuffs();
+            
+            // Мяч (цвет может меняться из-за бафов)
+            if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
+                const buff = buffSystem.activeBuff;
+                const colorIndex = buffSystem.hitsWithColor % buff.colors.length;
+                ctx.fillStyle = buff.colors[colorIndex];
+            } else {
+                ctx.fillStyle = ball.originalColor;
+            }
+            
+            // Рисуем мяч
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, BALL_SIZE, 0, Math.PI * 2);
+            ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
             ctx.fill();
-        }
-        
-        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-        function resetBall() {
-            ball.x = CANVAS_WIDTH / 2;
-            ball.y = CANVAS_HEIGHT / 2;
-            ball.dx = 3 * (Math.random() > 0.5 ? 1 : -1);
-            ball.dy = 2 * (Math.random() > 0.5 ? 1 : -1);
-        }
-        
-        function resetGame() {
-            player.score = 0;
-            opponent.score = 0;
-            scoreElement.textContent = "0 : 0";
-            resetBall();
-            gameActive = true;
+            
+            // Возвращаем стандартный цвет
+            ctx.fillStyle = '#FFFFFF';
         }
         
         // ========== ИГРОВОЙ ЦИКЛ ==========
         function gameLoop() {
+            if (!game.active) return;
+            
             update();
             draw();
+            
             requestAnimationFrame(gameLoop);
         }
         
-        // ========== ЗАПУСК ИГРЫ ==========
-        init();
+        // ========== ЗАГРУЗКА НАСТРОЕК ==========
+        window.onload = function() {
+            // Загрузка сохраненных настроек
+            const saved = localStorage.getItem('pingpongSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                game.sound = settings.sound !== undefined ? settings.sound : true;
+                game.showMobile = settings.showMobile !== undefined ? settings.showMobile : true;
+                game.buffsEnabled = settings.buffsEnabled !== undefined ? settings.buffsEnabled : true;
+                game.ballSpeed = settings.ballSpeed || 5;
+                
+                document.getElementById('soundToggle').checked = game.sound;
+                document.getElementById('mobileButtons').checked = game.showMobile;
+                document.getElementById('buffsToggle').checked = game.buffsEnabled;
+                document.getElementById('ballSpeed').value = game.ballSpeed;
+                document.getElementById('speedValue').textContent = game.ballSpeed;
+            }
+            
+            // Загрузка сложности
+            const savedDiff = localStorage.getItem('pingpongDifficulty');
+            if (savedDiff && DIFFICULTY[savedDiff]) {
+                game.difficulty = savedDiff;
+                const names = { easy: 'ЛЕГКАЯ', hard: 'СЛОЖНАЯ', ultra: 'УЛЬТРА' };
+                const colors = { easy: 'easy-badge', hard: 'hard-badge', ultra: 'ultra-badge' };
+                document.getElementById('difficultyBadge').textContent = names[savedDiff];
+                document.getElementById('difficultyBadge').className = `difficulty-badge ${colors[savedDiff]}`;
+            }
+            
+            // Скрыть мобильные кнопки если нужно
+            document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
+        };
     </script>
 </body>
 </html>
