@@ -648,80 +648,79 @@
         // ========== СИСТЕМА БАФОВ ==========
         function updateBuffs() {
             if (!game.buffsEnabled || !game.active) return;
-            
-            // Таймер перезарядки
-            if (buffSystem.cooldown > 0 && !buffSystem.buffIcon.visible) {
-                buffSystem.cooldown--;
-                
-                // Появление иконки бафа
-                if (buffSystem.cooldown <= 0) {
-                    spawnBuffIcon();
-                    buffSystem.cooldown = 900; // 30 секунд
-                }
-            }
-            
-                     // Обновление времени отображения статичного бафа
-            if (buffSystem.buffIcon.visible) {
-                buffSystem.buffIcon.timeLeft--;
-                
-                // Мерцание перед исчезновением (последние 60 кадров)
-                if (buffSystem.buffIcon.timeLeft < 60) {
-                    buffSystem.buffIcon.visible = (Math.floor(buffSystem.buffIcon.timeLeft / 10) % 2 === 0);
-                }
-                
-                // Если время вышло - скрыть баф
-                if (buffSystem.buffIcon.timeLeft <= 0) {
-                    buffSystem.buffIcon.visible = false;
-                }
-            }
-            
-            // Проверка столкновения с ракеткой
-            if (buffSystem.buffIcon.visible) {
-                const icon = buffSystem.buffIcon;
-                if (icon.x > player.x - 20 && icon.x < player.x + player.width + 20 &&
-                    icon.y > player.y - 20 && icon.y < player.y + player.height + 20) {
-                    
-                    activateBuff(icon.type);
-                    buffSystem.buffIcon.visible = false;
-                    if (game.sound) beep(1200, 0.3);
-                }
-            }
-            
-            // Обновление активного бафа
-            if (buffSystem.activeBuff) {
-                buffSystem.activeUntil--;
-                
-                // Обновление индикатора
-                const secondsLeft = Math.ceil(buffSystem.activeUntil / 60);
-                document.getElementById('activeBuffInfo').textContent = 
-                    `${buffSystem.activeBuff.icon} ${buffSystem.activeBuff.name}: ${secondsLeft}с`;
-                
-                if (buffSystem.activeUntil <= 0) {
-                    deactivateBuff();
-                }
-            }
+    
+    // Таймер перезарядки
+    if (buffSystem.cooldown > 0 && !buffSystem.buffIcon.visible) {
+        buffSystem.cooldown--;
+        
+        // Появление иконки бафа
+        if (buffSystem.cooldown <= 0) {
+            spawnBuffIcon();
+            buffSystem.cooldown = 900; // 15 секунд ← ИЗМЕНИЛОСЬ!
+        }
+    }
+    
+    // Обновление времени отображения статичного бафа ← ЭТО НОВЫЙ БЛОК!
+    if (buffSystem.buffIcon.visible) {
+        buffSystem.buffIcon.timeLeft--;
+        
+        // Мерцание перед исчезновением (последние 60 кадров)
+        if (buffSystem.buffIcon.timeLeft < 60) {
+            buffSystem.buffIcon.visible = (Math.floor(buffSystem.buffIcon.timeLeft / 10) % 2 === 0);
         }
         
-               function spawnBuffIcon() {
-            if (buffSystem.activeBuff || buffSystem.buffIcon.visible) return;
-            
-            const buffTypes = Object.values(BUFFS);
-            const randomBuff = buffTypes[Math.floor(Math.random() * buffTypes.length)];
-            
-            // Случайная позиция на поле (но не слишком близко к краям)
-            const x = 50 + Math.random() * (canvas.width - 100);
-            const y = 50 + Math.random() * (canvas.height - 100);
-            
-            buffSystem.buffIcon = {
-                x: x,
-                y: y,
-                type: randomBuff,
-                visible: true,
-                speed: 2,
-                timeLeft: 180 // 3 секунды отображения (60 FPS * 3)
-            };
+        // Если время вышло - скрыть баф
+        if (buffSystem.buffIcon.timeLeft <= 0) {
+            buffSystem.buffIcon.visible = false;
         }
+    }
+    
+    // Проверка столкновения с ракеткой
+    if (buffSystem.buffIcon.visible) {
+        const icon = buffSystem.buffIcon;
+        if (icon.x > player.x - 20 && icon.x < player.x + player.width + 20 &&
+            icon.y > player.y - 20 && icon.y < player.y + player.height + 20) {
+            
+            activateBuff(icon.type);
+            buffSystem.buffIcon.visible = false;
+            if (game.sound) beep(1200, 0.3);
+        }
+    }
+    
+    // Обновление активного бафа
+    if (buffSystem.activeBuff) {
+        buffSystem.activeUntil--;
         
+        // Обновление индикатора
+        const secondsLeft = Math.ceil(buffSystem.activeUntil / 60);
+        document.getElementById('activeBuffInfo').textContent = 
+            `${buffSystem.activeBuff.icon} ${buffSystem.activeBuff.name}: ${secondsLeft}с`;
+        
+        if (buffSystem.activeUntil <= 0) {
+            deactivateBuff();
+        }
+    }
+}
+
+function spawnBuffIcon() {
+    if (buffSystem.activeBuff || buffSystem.buffIcon.visible) return;
+    
+    const buffTypes = Object.values(BUFFS);
+    const randomBuff = buffTypes[Math.floor(Math.random() * buffTypes.length)];
+    
+    // Случайная позиция на поле (но не слишком близко к краям)
+    const x = 50 + Math.random() * (canvas.width - 100);
+    const y = 50 + Math.random() * (canvas.height - 100);
+    
+    buffSystem.buffIcon = {
+        x: x,
+        y: y,
+        type: randomBuff,
+        visible: true,
+        speed: 2,
+        timeLeft: 180 // 3 секунды отображения (60 FPS * 3)
+    };
+}
         function activateBuff(buff) {
             buffSystem.activeBuff = buff;
             buffSystem.activeUntil = buff.duration;
