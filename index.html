@@ -980,3 +980,143 @@
             // Мяч (цвет может меняться из-за бафов)
             if (!buffSystem.activeBuff || buffSystem.activeBuff.effect !== 'color') {
                 ctx.fillStyle = ball.originalColor
+       ctx.fillStyle = ball.originalColor;
+            }
+            
+            // Отрисовка мяча
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Отрисовка бафов (иконки и эффекты)
+            drawBuffs();
+            
+            // Отрисовка паузы
+            if (game.paused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#FF9800';
+                ctx.font = 'bold 36px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('ПАУЗА', canvas.width / 2, canvas.height / 2 - 40);
+                
+                ctx.fillStyle = '#FFF';
+                ctx.font = '18px Arial';
+                ctx.fillText('Нажмите ПРОБЕЛ или кнопку ПАУЗЫ', canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText('для продолжения', canvas.width / 2, canvas.height / 2 + 50);
+            }
+        }
+
+        // ========== ЗВУКИ ==========
+        function beep(frequency, duration) {
+            if (!game.sound) return;
+            
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                // Аудио недоступно
+            }
+        }
+
+        // ========== ИГРОВОЙ ЦИКЛ ==========
+        function gameLoop() {
+            update();
+            draw();
+            
+            if (game.active) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // ========== ЗАГРУЗКА НАСТРОЕК ==========
+        function loadSettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('pingpongSettings'));
+                if (saved) {
+                    game.sound = saved.sound !== undefined ? saved.sound : true;
+                    game.showMobile = saved.showMobile !== undefined ? saved.showMobile : true;
+                    game.buffsEnabled = saved.buffsEnabled !== undefined ? saved.buffsEnabled : true;
+                    game.ballSpeed = saved.ballSpeed !== undefined ? saved.ballSpeed : 5;
+                    
+                    document.getElementById('soundToggle').checked = game.sound;
+                    document.getElementById('mobileButtons').checked = game.showMobile;
+                    document.getElementById('buffsToggle').checked = game.buffsEnabled;
+                    document.getElementById('ballSpeed').value = game.ballSpeed;
+                    document.getElementById('speedValue').textContent = game.ballSpeed;
+                }
+            } catch (e) {
+                // Ошибка загрузки настроек
+            }
+        }
+
+        // ========== ОБРАБОТКА РЕСАЙЗА ==========
+        window.addEventListener('resize', () => {
+            if (canvas && game.active) {
+                const container = canvas.parentElement;
+                const maxWidth = Math.min(500, container.clientWidth - 20);
+                canvas.width = maxWidth;
+                canvas.height = Math.min(400, window.innerHeight * 0.5);
+                
+                // Корректировка позиций объектов при ресайзе
+                player.y = Math.min(player.y, canvas.height - player.height);
+                opponent.y = Math.min(opponent.y, canvas.height - opponent.height);
+                
+                if (ball.y > canvas.height - ball.size) {
+                    ball.y = canvas.height - ball.size;
+                }
+            }
+        });
+
+        // ========== ПРЕДОТВРАЩЕНИЕ СКРОЛЛА ПРИ КАСАНИИ ==========
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.mobile-btn') || e.target.closest('#gameCanvas')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // ========== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ==========
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            
+            // Автоматическое определение устройств
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                document.getElementById('mobileControls').classList.remove('hidden');
+            }
+            
+            // Показать меню
+            showScreen('menuScreen');
+            
+            // Фокус на игре для работы клавиатуры
+            document.addEventListener('click', () => {
+                if (game.active) {
+                    canvas.focus();
+                }
+            });
+            
+            console.log('Ping Pong Pro v1.2 загружен! 🎮');
+        });
+
+        // ========== ГЛОБАЛЬНЫЙ ДОСТУП ДЛЯ ОТЛАДКИ ==========
+        window.game = game;
+        window.buffSystem = buffSystem;
+        window.BUFFS = BUFFS;
+    </script>
+</body>
+</html>
