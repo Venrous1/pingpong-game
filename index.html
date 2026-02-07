@@ -1,982 +1,263 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ping Pong Pro</title>
-    <style>
-        /* СБРОС СТИЛЕЙ */
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #000;
-            font-family: Arial, sans-serif;
-            color: white;
-        }
-        
-        /* КОНТЕЙНЕР */
-        .game-container {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 10px;
-        }
-        
-        /* ЗАГОЛОВОК (только в меню) */
-        .game-title {
-            text-align: center;
-            padding: 10px 0;
-            color: #4CAF50;
-            font-size: 28px;
-            text-shadow: 0 0 10px #4CAF50;
-            margin-bottom: 10px;
-        }
-        
-        .version {
-            color: #888;
-            font-size: 12px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        /* ОБЩИЕ ЭКРАНЫ */
-        .screen {
-            display: none;
-            flex: 1;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
-            width: 100%;
-        }
-        
-        #menuScreen { display: flex; }
-        
-        /* КНОПКИ МЕНЮ */
-        .menu-buttons {
-            width: 100%;
-            max-width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 20px;
-        }
-        
-        .menu-btn {
-            padding: 16px;
-            font-size: 18px;
-            background: #2E7D32;
-            color: white;
-            border: 2px solid #4CAF50;
-            border-radius: 12px;
-            cursor: pointer;
-            text-align: center;
-            width: 100%;
-            transition: transform 0.1s;
-        }
-        
-        .menu-btn:active {
-            transform: scale(0.97);
-            background: #388E3C;
-        }
-        
-        /* ИНФО ТЕКСТ */
-        .menu-info {
-            margin-top: 30px;
-            color: #aaa;
-            font-size: 14px;
-            text-align: center;
-            line-height: 1.4;
-            padding: 0 10px;
-        }
-        
-        /* ИГРОВОЕ ПОЛЕ */
-        #gameScreen {
-            justify-content: flex-start;
-            padding: 5px;
-        }
-        
-        .game-header {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 0 5px;
-        }
-        
-        .score {
-            font-size: 24px;
-            font-weight: bold;
-            color: #FFEB3B;
-            min-width: 80px;
-        }
-        
-        .buff-timer {
-            font-size: 12px;
-            color: #FF9800;
-            margin-left: 5px;
-        }
-        
-        .difficulty-badge {
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: bold;
-            background: #333;
-        }
-        
-        .easy-badge { background: #4CAF50; }
-        .hard-badge { background: #FF9800; }
-        .ultra-badge { background: #f44336; }
-        
-        /* CANVAS */
-        #gameCanvas {
-            background: #000;
-            border: 2px solid white;
-            border-radius: 5px;
-            display: block;
-            width: 100%;
-            height: 50vh;
-            max-height: 400px;
-        }
-        
-        /* УПРАВЛЕНИЕ В ИГРЕ */
-        .game-controls {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-            padding: 0 10px;
-        }
-        
-        .control-btn {
-            padding: 12px 20px;
-            font-size: 16px;
-            background: #333;
-            color: white;
-            border: 2px solid #666;
-            border-radius: 10px;
-            cursor: pointer;
-            flex: 1;
-            max-width: 150px;
-            text-align: center;
-        }
-        
-        .control-btn:active {
-            background: #444;
-        }
-        
-        /* МОБИЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ */
-        .mobile-game-controls {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 15px;
-            width: 100%;
-            padding: 0 20px;
-        }
-        
-        .mobile-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #444, #222);
-            border: 3px solid white;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-        }
-        
-        .mobile-btn:active {
-            transform: scale(0.9);
-            background: linear-gradient(145deg, #555, #333);
-        }
-        
-        /* ЭКРАН КОНЦА ИГРЫ */
-        #gameOverScreen { 
-            text-align: center; 
-            justify-content: center; 
-        }
-        
-        .game-over-title {
-            font-size: 28px;
-            color: #f44336;
-            margin-bottom: 15px;
-        }
-        
-        .game-message {
-            font-size: 18px;
-            color: #FF9800;
-            margin: 15px 0;
-            padding: 0 10px;
-        }
-        
-        .final-score {
-            font-size: 32px;
-            color: #4CAF50;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        
-        /* НАСТРОЙКИ */
-        .settings-group {
-            width: 100%;
-            max-width: 300px;
-            background: #111;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-        }
-        
-        .setting-item {
-            margin: 15px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .setting-label {
-            font-size: 16px;
-            color: #ccc;
-        }
-        
-        input[type="range"] {
-            width: 100%;
-            margin: 10px 0;
-        }
-        
-        /* ИНДИКАТОР БАФОВ */
-        .buffs-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 2px solid #FF9800;
-            font-size: 14px;
-            display: none;
-        }
-        
-        .buff-active {
-            color: #FF9800;
-            font-weight: bold;
-        }
-        
-        /* АДАПТИВНОСТЬ */
-        @media (max-width: 480px) {
-            .game-title { font-size: 24px; }
-            .menu-btn { padding: 14px; font-size: 16px; }
-            .score { font-size: 20px; }
-            .control-btn { padding: 10px; font-size: 14px; }
-            .mobile-btn { width: 60px; height: 60px; font-size: 20px; }
-            .game-over-title { font-size: 24px; }
-            .game-message { font-size: 16px; }
-            .final-score { font-size: 28px; }
-            .buffs-indicator { top: 5px; right: 5px; padding: 5px 8px; font-size: 12px; }
-        }
-        
-        @media (max-height: 700px) {
-            #gameCanvas { height: 45vh; }
-            .game-header { margin-bottom: 5px; }
-            .game-controls { margin-top: 10px; }
-            .mobile-game-controls { margin-top: 10px; }
-        }
-        
-        /* УТИЛИТЫ */
-        .back-btn {
-            background: #555 !important;
-            border-color: #777 !important;
-            margin-top: 20px;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-    </style>
-</head>
-<body>
-    <div class="game-container">
-        <!-- ГЛАВНОЕ МЕНЮ -->
-        <div id="menuScreen" class="screen">
-            <h1 class="game-title">PING PONG PRO</h1>
-            <div class="version">Версия 1.2 с бафами</div>
-            
-            <div class="menu-buttons">
-                <button class="menu-btn" onclick="startGame()">▶ НАЧАТЬ ИГРУ</button>
-                <button class="menu-btn" onclick="showScreen('difficultyScreen')">⚙ СЛОЖНОСТЬ</button>
-                <button class="menu-btn" onclick="showScreen('settingsScreen')">🔧 НАСТРОЙКИ</button>
-            </div>
-            
-            <div class="menu-info">
-                <p>🎮 <strong>Управление:</strong></p>
-                <p>Компьютер: W/S или стрелки</p>
-                <p>Телефон: кнопки ↓</p>
-                <p>Пауза: Пробел или кнопка ⏸</p>
-                <p style="color:#FF9800; margin-top:10px;">🔥 Новое: Система бафов!</p>
-            </div>
-        </div>
-        
-        <!-- ВЫБОР СЛОЖНОСТИ -->
-        <div id="difficultyScreen" class="screen">
-            <h2 style="color:#4CAF50; margin-bottom:25px;">🎯 СЛОЖНОСТЬ</h2>
-            
-            <div class="menu-buttons">
-                <button class="menu-btn" onclick="setDifficulty('easy')">🟢 ЛЕГКАЯ</button>
-                <button class="menu-btn" onclick="setDifficulty('hard')">🟡 СЛОЖНАЯ</button>
-                <button class="menu-btn" onclick="setDifficulty('ultra')">🔴 УЛЬТРА</button>
-                <button class="menu-btn back-btn" onclick="backToMenu()">← НАЗАД</button>
-            </div>
-        </div>
-        
-        <!-- НАСТРОЙКИ -->
-        <div id="settingsScreen" class="screen">
-            <h2 style="color:#FF9800; margin-bottom:25px;">🔧 НАСТРОЙКИ</h2>
-            
-            <div class="settings-group">
-                <div class="setting-item">
-                    <span class="setting-label">🔊 Звуки</span>
-                    <input type="checkbox" id="soundToggle" checked>
-                </div>
-                
-                <div class="setting-item">
-                    <span class="setting-label">📱 Кнопки на экране</span>
-                    <input type="checkbox" id="mobileButtons" checked>
-                </div>
-                
-                <div class="setting-item">
-                    <span class="setting-label">🎮 Система бафов</span>
-                    <input type="checkbox" id="buffsToggle" checked>
-                </div>
-                
-                <div class="setting-item" style="flex-direction:column; align-items:stretch;">
-                    <span class="setting-label">⚡ Скорость: <span id="speedValue">5</span></span>
-                    <input type="range" id="ballSpeed" min="3" max="8" value="5">
-                </div>
-            </div>
-            
-            <div class="menu-buttons">
-                <button class="menu-btn" onclick="saveSettings()">💾 СОХРАНИТЬ</button>
-                <button class="menu-btn back-btn" onclick="backToMenu()">← НАЗАД</button>
-            </div>
-        </div>
-        
-        <!-- КОНЕЦ ИГРЫ -->
-        <div id="gameOverScreen" class="screen">
-            <h2 class="game-over-title" id="gameOverTitle">ИГРА ОКОНЧЕНА</h2>
-            <div class="game-message" id="gameMessage"></div>
-            <div class="final-score" id="finalScore">0 : 0</div>
-            
-            <div class="menu-buttons">
-                <button class="menu-btn" onclick="restartGame()">🔄 ИГРАТЬ СНОВА</button>
-                <button class="menu-btn" onclick="backToMenu()">🏠 В МЕНЮ</button>
-            </div>
-        </div>
-        
-        <!-- ИГРА -->
-        <div id="gameScreen" class="screen">
-            <div class="game-header">
-                <div class="score" id="scoreDisplay">0 : 0</div>
-                <div class="difficulty-badge easy-badge" id="difficultyBadge">ЛЕГКАЯ</div>
-            </div>
-            
-            <canvas id="gameCanvas"></canvas>
-            
-            <!-- Индикатор бафов -->
-            <div class="buffs-indicator" id="buffsIndicator">
-                <span id="buffStatus">Бафы: 🟢 Вкл</span>
-                <div id="activeBuffInfo" class="buff-active" style="display:none; margin-top:5px;"></div>
-            </div>
-            
-            <div class="game-controls">
-                <button class="control-btn" onclick="pauseGame()" id="pauseBtn">⏸ ПАУЗА</button>
-                <button class="control-btn" onclick="backToMenu()">🏠 МЕНЮ</button>
-            </div>
-            
-            <div class="mobile-game-controls" id="mobileControls">
-                <button class="mobile-btn" id="upBtn">↑</button>
-                <button class="mobile-btn" onclick="pauseGame()">⏸</button>
-                <button class="mobile-btn" id="downBtn">↓</button>
-            </div>
-        </div>
-    </div>
+// ========== СИСТЕМА БАФОВ ==========
+const BUFFS = {
+    BIG_BALL: {
+        id: 'big_ball',
+        name: '🔥 Большой мяч',
+        duration: 240, // 4 секунды (60 FPS * 4)
+        effect: 'size',
+        multiplier: 2.0,
+        color: '#FF9800',
+        icon: '🔥'
+    },
+    SPEED_BOOST: {
+        id: 'speed_boost',
+        name: '⚡ Ускорение',
+        duration: 180, // 3 секунды
+        effect: 'speed',
+        multiplier: 1.5,
+        color: '#2196F3',
+        icon: '⚡'
+    },
+    COLOR_CHANGE: {
+        id: 'color_change',
+        name: '🌈 Цветной мяч',
+        duration: 300, // 5 секунд
+        effect: 'color',
+        colors: ['#FF5252', '#4CAF50', '#2196F3', '#FFEB3B', '#E91E63'],
+        icon: '🌈',
+        bonusPoints: 1
+    }
+};
 
-    <script>
-        // ========== КОНФИГУРАЦИЯ ==========
-        const DIFFICULTY = {
-            easy: { ballSpeed: 4, aiSpeed: 3, aiAccuracy: 0.7 },
-            hard: { ballSpeed: 6, aiSpeed: 4, aiAccuracy: 0.85 },
-            ultra: { ballSpeed: 8, aiSpeed: 5, aiAccuracy: 0.95 }
-        };
+// В инициализации системы бафов измените buffSystem:
+let buffSystem = {
+    cooldown: 1800, // 30 секунд (60 FPS * 30)
+    activeBuff: null,
+    activeUntil: 0,
+    buffIcon: { 
+        x: 0, 
+        y: 0, // ИЗМЕНИЛОСЬ: теперь не -50, а 0
+        type: null, 
+        visible: false, 
+        speed: 0, // ИЗМЕНИЛОСЬ: скорость 0
+        collected: false,
+        rotation: 0,
+        pulse: 0
+    },
+    hitsWithColor: 0,
+    originalBallSize: 10,
+    originalBallSpeed: 5
+};
+
+// В функции spawnBuffIcon измените:
+function spawnBuffIcon() {
+    if (buffSystem.activeBuff || buffSystem.buffIcon.visible) return;
+    
+    const buffTypes = Object.values(BUFFS);
+    const randomBuff = buffTypes[Math.floor(Math.random() * buffTypes.length)];
+    
+    // Случайная позиция в верхней части поля
+    buffSystem.buffIcon = {
+        x: 100 + Math.random() * (canvas.width - 200), // Не слишком близко к краям
+        y: 80 + Math.random() * 100, // Верхняя часть поля
+        type: randomBuff,
+        visible: true,
+        speed: 0, // Статичный
+        collected: false,
+        rotation: 0,
+        pulse: 0
+    };
+}
+
+// В функции updateBuffs измените часть движения:
+function updateBuffs() {
+    if (!game.buffsEnabled || !game.active) return;
+    
+    // Таймер перезарядки
+    if (buffSystem.cooldown > 0 && !buffSystem.buffIcon.visible) {
+        buffSystem.cooldown--;
         
-        const PHRASES = {
-            win: [
-                "Победа! 🏆", "Отлично! 🎯", "AI повержен! 🤖", 
-                "Мастер пинг-понга! 👑", "Браво! ✨", "Невероятно! 🚀"
-            ],
-            lose: [
-                "Игра окончена", "Попробуйте ещё! 🔄", "AI сильнее...", 
-                "Почти получилось! ⚡", "Тренируйтесь! 🏓", "В следующий раз! 💪"
-            ]
-        };
+        // Появление иконки бафа
+        if (buffSystem.cooldown <= 0) {
+            spawnBuffIcon();
+            buffSystem.cooldown = 1800; // 30 секунд
+        }
+    }
+    
+    // АНИМАЦИЯ БАФА (пульсация и вращение вместо падения)
+    if (buffSystem.buffIcon.visible) {
+        const icon = buffSystem.buffIcon;
         
-        // ========== СИСТЕМА БАФОВ ==========
-        const BUFFS = {
-            BIG_BALL: {
-                id: 'big_ball',
-                name: '🔥 Большой мяч',
-                duration: 240, // 4 секунды (60 FPS * 4)
-                effect: 'size',
-                multiplier: 2.0,
-                color: '#FF9800',
-                icon: '🔥'
-            },
-            SPEED_BOOST: {
-                id: 'speed_boost',
-                name: '⚡ Ускорение',
-                duration: 180, // 3 секунды
-                effect: 'speed',
-                multiplier: 1.5,
-                color: '#2196F3',
-                icon: '⚡'
-            },
-            COLOR_CHANGE: {
-                id: 'color_change',
-                name: '🌈 Цветной мяч',
-                duration: 300, // 5 секунд
-                effect: 'color',
-                colors: ['#FF5252', '#4CAF50', '#2196F3', '#FFEB3B', '#E91E63'],
-                icon: '🌈',
-                bonusPoints: 1
-            }
-        };
-        
-        // ========== СОСТОЯНИЕ ИГРЫ ==========
-        let canvas, ctx;
-        let game = {
-            active: false,
-            paused: false,
-            difficulty: 'easy',
-            playerScore: 0,
-            opponentScore: 0,
-            sound: true,
-            showMobile: true,
-            ballSpeed: 5,
-            buffsEnabled: true
-        };
-        
-        // Игровые объекты
-        let player, opponent, ball;
-        let keys = {};
-        
-        // Система бафов
-        let buffSystem = {
-            cooldown: 1800, // 30 секунд (60 FPS * 30)
-            activeBuff: null,
-            activeUntil: 0,
-            buffIcon: { x: 0, y: -50, type: null, visible: false, speed: 2 },
-            hitsWithColor: 0,
-            originalBallSize: 10,
-            originalBallSpeed: 5
-        };
-        
-        // ========== УПРАВЛЕНИЕ ЭКРАНАМИ ==========
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            const screen = document.getElementById(screenId);
-            if (screen) {
-                screen.style.display = 'flex';
-            }
+        // Вращение
+        icon.rotation += 0.02;
+        if (icon.rotation > Math.PI * 2) {
+            icon.rotation = 0;
         }
         
-        function backToMenu() {
-            game.active = false;
-            showScreen('menuScreen');
-        }
+        // Пульсация
+        icon.pulse = Math.sin(Date.now() / 500) * 0.2 + 1; // От 0.8 до 1.2
         
-        function setDifficulty(diff) {
-            game.difficulty = diff;
-            const names = { easy: 'ЛЕГКАЯ', hard: 'СЛОЖНАЯ', ultra: 'УЛЬТРА' };
-            const colors = { easy: 'easy-badge', hard: 'hard-badge', ultra: 'ultra-badge' };
-            
-            document.getElementById('difficultyBadge').textContent = names[diff];
-            document.getElementById('difficultyBadge').className = `difficulty-badge ${colors[diff]}`;
-            
-            backToMenu();
-        }
+        // Баф не падает, остается на месте
+        // icon.y += icon.speed; // УБРАНО
         
-        function saveSettings() {
-            game.sound = document.getElementById('soundToggle').checked;
-            game.showMobile = document.getElementById('mobileButtons').checked;
-            game.buffsEnabled = document.getElementById('buffsToggle').checked;
-            game.ballSpeed = parseInt(document.getElementById('ballSpeed').value);
-            document.getElementById('speedValue').textContent = game.ballSpeed;
-            
-            document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
-            localStorage.setItem('pingpongSettings', JSON.stringify(game));
-            
-            backToMenu();
-        }
-        
-        // ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ ==========
-        function startGame() {
-            showScreen('gameScreen');
-            initGame();
-        }
-        
-        function initGame() {
-            // Canvas
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
-            
-            // Автоматический размер
-            const container = canvas.parentElement;
-            const maxWidth = Math.min(500, container.clientWidth - 20);
-            canvas.width = maxWidth;
-            canvas.height = Math.min(400, window.innerHeight * 0.5);
-            
-            // Объекты
-            player = {
-                x: 15,
-                y: canvas.height / 2 - 50,
-                width: 10,
-                height: 100,
-                speed: 6
-            };
-            
-            opponent = {
-                x: canvas.width - 25,
-                y: canvas.height / 2 - 50,
-                width: 10,
-                height: 100,
-                speed: DIFFICULTY[game.difficulty].aiSpeed
-            };
-            
-            ball = {
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                size: 10,
-                dx: game.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
-                dy: game.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
-                originalColor: '#FFFFFF'
-            };
-            
-            // Сброс состояния
-            game.playerScore = 0;
-            game.opponentScore = 0;
-            game.active = true;
-            game.paused = false;
-            
-            // Сброс системы бафов
-            buffSystem = {
-                cooldown: 1800,
-                activeBuff: null,
-                activeUntil: 0,
-                buffIcon: { x: 0, y: -50, type: null, visible: false, speed: 2 },
-                hitsWithColor: 0,
-                originalBallSize: ball.size,
-                originalBallSpeed: game.ballSpeed
-            };
-            
-            // Показать индикатор бафов
-            document.getElementById('buffsIndicator').style.display = 'block';
-            document.getElementById('buffStatus').textContent = 
-                game.buffsEnabled ? 'Бафы: 🟢 Вкл' : 'Бафы: 🔴 Выкл';
-            document.getElementById('activeBuffInfo').style.display = 'none';
-            
-            updateScore();
-            setupControls();
-            document.getElementById('mobileControls').classList.toggle('hidden', !game.showMobile);
-            document.getElementById('pauseBtn').textContent = '⏸ ПАУЗА';
-            
-            gameLoop();
-        }
-        
-        // ========== УПРАВЛЕНИЕ ==========
-        function setupControls() {
-            keys = {};
-            
-            // Клавиатура
-            document.onkeydown = (e) => {
-                const key = e.key.toLowerCase();
-                if (['w', 's', 'arrowup', 'arrowdown', ' ', 'p'].includes(key)) {
-                    keys[key] = true;
-                    if ((key === ' ' || key === 'p') && game.active) {
-                        pauseGame();
-                        e.preventDefault();
-                    }
-                }
-            };
-            
-            document.onkeyup = (e) => {
-                const key = e.key.toLowerCase();
-                if (['w', 's', 'arrowup', 'arrowdown'].includes(key)) {
-                    keys[key] = false;
-                }
-            };
-            
-            // Мобильные кнопки
-            ['upBtn', 'downBtn'].forEach(id => {
-                const btn = document.getElementById(id);
-                const clear = () => keys['arrowup'] = keys['arrowdown'] = false;
-                
-                btn.ontouchstart = btn.onmousedown = () => {
-                    keys[id === 'upBtn' ? 'arrowup' : 'arrowdown'] = true;
-                };
-                
-                btn.ontouchend = btn.onmouseup = btn.onmouseleave = clear;
-            });
-        }
-        
-        // ========== СИСТЕМА БАФОВ ==========
-        function updateBuffs() {
-            if (!game.buffsEnabled || !game.active) return;
-            
-            // Таймер перезарядки
-            if (buffSystem.cooldown > 0 && !buffSystem.buffIcon.visible) {
-                buffSystem.cooldown--;
-                
-                // Появление иконки бафа
-                if (buffSystem.cooldown <= 0) {
-                    spawnBuffIcon();
-                    buffSystem.cooldown = 1800; // 30 секунд
-                }
-            }
-            
-            // Движение иконки бафа
-            if (buffSystem.buffIcon.visible) {
-                buffSystem.buffIcon.y += buffSystem.buffIcon.speed;
-                
-                // Если упала за экран
-                if (buffSystem.buffIcon.y > canvas.height + 30) {
-                    buffSystem.buffIcon.visible = false;
-                }
-            }
-            
-            // Проверка столкновения с ракеткой
-            if (buffSystem.buffIcon.visible) {
-                const icon = buffSystem.buffIcon;
-                if (icon.x > player.x - 20 && icon.x < player.x + player.width + 20 &&
-                    icon.y > player.y - 20 && icon.y < player.y + player.height + 20) {
-                    
-                    activateBuff(icon.type);
-                    buffSystem.buffIcon.visible = false;
-                    if (game.sound) beep(1200, 0.3);
-                }
-            }
-            
-            // Обновление активного бафа
-            if (buffSystem.activeBuff) {
-                buffSystem.activeUntil--;
-                
-                // Обновление индикатора
-                const secondsLeft = Math.ceil(buffSystem.activeUntil / 60);
-                document.getElementById('activeBuffInfo').textContent = 
-                    `${buffSystem.activeBuff.icon} ${buffSystem.activeBuff.name}: ${secondsLeft}с`;
-                
-                if (buffSystem.activeUntil <= 0) {
-                    deactivateBuff();
-                }
+        // Исчезает через 10 секунд если не собран
+        if (buffSystem.buffIcon.duration) {
+            buffSystem.buffIcon.duration--;
+            if (buffSystem.buffIcon.duration <= 0) {
+                buffSystem.buffIcon.visible = false;
             }
         }
+    }
+    
+    // Проверка столкновения с ракеткой
+    if (buffSystem.buffIcon.visible) {
+        const icon = buffSystem.buffIcon;
+        // Увеличенная зона сбора для удобства
+        const collectRadius = 35;
+        const paddleCenterX = player.x + player.width / 2;
+        const paddleCenterY = player.y + player.height / 2;
         
-        function spawnBuffIcon() {
-            if (buffSystem.activeBuff || buffSystem.buffIcon.visible) return;
-            
-            const buffTypes = Object.values(BUFFS);
-            const randomBuff = buffTypes[Math.floor(Math.random() * buffTypes.length)];
-            
-            buffSystem.buffIcon = {
-                x: 50 + Math.random() * (canvas.width - 100),
-                y: -30,
-                type: randomBuff,
-                visible: true,
-                speed: 2 + Math.random() * 2
-            };
+        // Расстояние от центра бафа до центра ракетки
+        const distance = Math.sqrt(
+            Math.pow(icon.x - paddleCenterX, 2) + 
+            Math.pow(icon.y - paddleCenterY, 2)
+        );
+        
+        if (distance < collectRadius) {
+            activateBuff(icon.type);
+            buffSystem.buffIcon.visible = false;
+            if (game.sound) beep(1200, 0.3);
         }
+    }
+    
+    // Обновление активного бафа
+    if (buffSystem.activeBuff) {
+        buffSystem.activeUntil--;
         
-        function activateBuff(buff) {
-            buffSystem.activeBuff = buff;
-            buffSystem.activeUntil = buff.duration;
-            
-            // Применение эффектов
-            if (buff.effect === 'size') {
-                ball.size = buffSystem.originalBallSize * buff.multiplier;
-            } else if (buff.effect === 'speed') {
-                ball.dx *= buff.multiplier;
-                ball.dy *= buff.multiplier;
-            } else if (buff.effect === 'color') {
-                buffSystem.hitsWithColor = 0;
-            }
-            
-            // Показать индикатор
-            document.getElementById('activeBuffInfo').style.display = 'block';
-        }
+        // Обновление индикатора
+        const secondsLeft = Math.ceil(buffSystem.activeUntil / 60);
+        document.getElementById('activeBuffInfo').textContent = 
+            `${buffSystem.activeBuff.icon} ${buffSystem.activeBuff.name}: ${secondsLeft}с`;
         
-        function deactivateBuff() {
-            if (!buffSystem.activeBuff) return;
-            
-            // Отмена эффектов
-            const buff = buffSystem.activeBuff;
-            
-            if (buff.effect === 'size') {
-                ball.size = buffSystem.originalBallSize;
-            } else if (buff.effect === 'speed') {
-                ball.dx /= buff.multiplier;
-                ball.dy /= buff.multiplier;
-            } else if (buff.effect === 'color') {
-                // Возврат обычного цвета
-                ctx.fillStyle = ball.originalColor;
-            }
-            
-            buffSystem.activeBuff = null;
-            document.getElementById('activeBuffInfo').style.display = 'none';
-        }
-        
-        function drawBuffs() {
-            // Отрисовка иконки бафа
-            if (buffSystem.buffIcon.visible) {
-                const icon = buffSystem.buffIcon;
-                
-                // Свечение
-                ctx.shadowColor = icon.type.color;
-                ctx.shadowBlur = 15;
-                
-                // Круг иконки
-                ctx.fillStyle = icon.type.color;
-                ctx.beginPath();
-                ctx.arc(icon.x, icon.y, 20, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Иконка
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = 'bold 24px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(icon.type.icon, icon.x, icon.y);
-                
-                // Сброс тени
-                ctx.shadowBlur = 0;
-            }
-            
-            // Отрисовка эффектов активного бафа
-            if (buffSystem.activeBuff) {
-                const buff = buffSystem.activeBuff;
-                
-                // Эффект для цветного мяча
-                if (buff.effect === 'color') {
-                    const colorIndex = buffSystem.hitsWithColor % buff.colors.length;
-                    ctx.fillStyle = buff.colors[colorIndex];
-                }
-            }
-        }
-        
-        // ========== ИГРОВАЯ ЛОГИКА ==========
-        function update() {
-            if (!game.active || game.paused) return;
-            
-            // Обновление бафов
-            updateBuffs();
-            
-            // Игрок
-            if ((keys['w'] || keys['arrowup']) && player.y > 0) {
-                player.y -= player.speed;
-            }
-            if ((keys['s'] || keys['arrowdown']) && player.y < canvas.height - player.height) {
-                player.y += player.speed;
-            }
-            
-            // AI
-            const diff = DIFFICULTY[game.difficulty];
-            let targetY = ball.y - opponent.height / 2;
-            
-            if (Math.random() > diff.aiAccuracy) {
-                targetY += (Math.random() - 0.5) * 70;
-            }
-            
-            if (opponent.y < targetY && opponent.y < canvas.height - opponent.height) {
-                opponent.y += Math.min(opponent.speed, targetY - opponent.y);
-            }
-            if (opponent.y > targetY && opponent.y > 0) {
-                opponent.y -= Math.min(opponent.speed, opponent.y - targetY);
-            }
-            
-            // Мяч
-            ball.x += ball.dx;
-            ball.y += ball.dy;
-            
-            // Отскок от стен
-            if (ball.y <= ball.size || ball.y >= canvas.height - ball.size) {
-                ball.dy *= -1;
-                beep(600, 0.1);
-            }
-            
-            // Столкновения
-            const hitPlayer = ball.x - ball.size < player.x + player.width &&
-                            ball.x + ball.size > player.x &&
-                            ball.y > player.y && 
-                            ball.y < player.y + player.height;
-            
-            const hitOpponent = ball.x + ball.size > opponent.x &&
-                              ball.x - ball.size < opponent.x + opponent.width &&
-                              ball.y > opponent.y && 
-                              ball.y < opponent.y + opponent.height;
-            
-            if (hitPlayer) {
-                ball.dx = Math.abs(ball.dx);
-                ball.dy = 5 * ((ball.y - player.y) / player.height - 0.5);
-                ball.x = player.x + player.width + ball.size;
-                beep(800, 0.05);
-                
-                // Подсчет ударов для цветного бафа
-                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
-                    buffSystem.hitsWithColor++;
-                }
-            }
-            
-            if (hitOpponent) {
-                ball.dx = -Math.abs(ball.dx);
-                ball.dy = 5 * ((ball.y - opponent.y) / opponent.height - 0.5);
-                ball.x = opponent.x - ball.size;
-                beep(800, 0.05);
-                
-                // Подсчет ударов для цветного бафа
-                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color') {
-                    buffSystem.hitsWithColor++;
-                }
-            }
-            
-            // Голы
-            if (ball.x - ball.size <= 0) {
-                game.opponentScore++;
-                
-                // Бонусные очки для цветного бафа
-                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color' && 
-                    buffSystem.activeBuff.bonusPoints) {
-                    game.opponentScore += buffSystem.activeBuff.bonusPoints;
-                }
-                
-                resetBall();
-                beep(300, 0.2);
-            }
-            
-            if (ball.x + ball.size >= canvas.width) {
-                game.playerScore++;
-                
-                // Бонусные очки для цветного бафа
-                if (buffSystem.activeBuff && buffSystem.activeBuff.effect === 'color' && 
-                    buffSystem.activeBuff.bonusPoints) {
-                    game.playerScore += buffSystem.activeBuff.bonusPoints;
-                }
-                
-                resetBall();
-                beep(1000, 0.2);
-            }
-            
-            updateScore();
-            
-            // Конец игры
-            if (game.playerScore >= 10 || game.opponentScore >= 10) {
-                endGame();
-            }
-        }
-        
-        function resetBall() {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            ball.dx = game.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
-            ball.dy = game.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
-            
-            // Применяем настройки сложности
-            const config = DIFFICULTY[game.difficulty];
-            ball.dx = Math.sign(ball.dx) * config.ballSpeed;
-            ball.dy = Math.sign(ball.dy) * config.ballSpeed;
-            
-            // Возвращаем оригинальный цвет
-            ctx.fillStyle = ball.originalColor;
-        }
-        
-        function updateScore() {
-            document.getElementById('scoreDisplay').textContent = 
-                `${game.playerScore} : ${game.opponentScore}`;
-        }
-        
-        // ========== КОНЕЦ ИГРЫ ==========
-        function endGame() {
-            game.active = false;
-            
-            // Деактивация бафов
+        if (buffSystem.activeUntil <= 0) {
             deactivateBuff();
-            document.getElementById('buffsIndicator').style.display = 'none';
-            
-            const playerWon = game.playerScore >= 10;
-            const phrases = playerWon ? PHRASES.win : PHRASES.lose;
-            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-            
-            document.getElementById('gameOverTitle').textContent = 
-                playerWon ? "🎉 ПОБЕДА!" : "🎮 ИГРА ОКОНЧЕНА";
-            document.getElementById('gameMessage').textContent = phrase;
-            document.getElementById('finalScore').textContent = 
-                `${game.playerScore} : ${game.opponentScore}`;
-            
-            setTimeout(() => showScreen('gameOverScreen'), 500);
         }
+    }
+}
+
+// В функции drawBuffs измените отрисовку:
+function drawBuffs() {
+    // Отрисовка иконки бафа
+    if (buffSystem.buffIcon.visible) {
+        const icon = buffSystem.buffIcon;
         
-        function restartGame() {
-            showScreen('gameScreen');
-            initGame();
+        // Сохраняем текущее состояние контекста
+        ctx.save();
+        
+        // Перемещаем и вращаем вокруг центра бафа
+        ctx.translate(icon.x, icon.y);
+        ctx.rotate(icon.rotation);
+        
+        // Пульсация
+        const scale = icon.pulse;
+        ctx.scale(scale, scale);
+        
+        // Свечение
+        ctx.shadowColor = icon.type.color;
+        ctx.shadowBlur = 20 * scale;
+        
+        // Внешний круг (свечение)
+        ctx.fillStyle = icon.type.color + '80'; // Полупрозрачный
+        ctx.beginPath();
+        ctx.arc(0, 0, 25, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Внутренний круг
+        ctx.fillStyle = icon.type.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Иконка
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(icon.type.icon, 0, 0);
+        
+        // Восстанавливаем контекст
+        ctx.restore();
+        
+        // Сброс тени
+        ctx.shadowBlur = 0;
+        
+        // Подсказка (пульсирующий текст)
+        ctx.fillStyle = '#FF9800';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Собери баф!', icon.x, icon.y + 40);
+    }
+    
+    // Отрисовка эффектов активного бафа
+    if (buffSystem.activeBuff) {
+        const buff = buffSystem.activeBuff;
+        
+        // Эффект для цветного мяча
+        if (buff.effect === 'color') {
+            const colorIndex = buffSystem.hitsWithColor % buff.colors.length;
+            ctx.fillStyle = buff.colors[colorIndex];
         }
+    }
+}
+
+// Также добавьте функцию beep (если её нет):
+function beep(freq, duration) {
+    if (!game.sound) return;
+    
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
         
-        // ========== ПАУЗА ==========
-        function pauseGame() {
-            if (!game.active) return;
-            
-            game.paused = !game.paused;
-            document.getElementById('pauseBtn').textContent = 
-                game.paused ? '▶ ПРОДОЛЖИТЬ' : '⏸ ПАУЗА';
-            
-            if (game.sound) beep(400, 0.1);
-        }
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
         
-        // ========== ОТРИСОВКА ==========
-        function draw() {
-            // Фон
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Линия
-            ctx.setLineDash([5, 8]);
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
-            ctx.strokeStyle = '#333';
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // Ракетки
-            ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-            
-            ctx.fillStyle = '#f44336';
-            ctx.fillRect(opponent.x, opponent.y, opponent.width, opponent.height);
-            
-            // Мяч (цвет может меняться из-за бафов)
-            if (!buffSystem.activeBuff || buffSystem.activeBuff.effect !== 'color') {
-                ctx.fillStyle = ball.originalColor
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + duration);
+    } catch (e) {
+        console.log("Audio not supported");
+    }
+}
+
+// В initGame обновите инициализацию buffSystem:
+function initGame() {
+    // ... предыдущий код ...
+    
+    // Сброс системы бафов
+    buffSystem = {
+        cooldown: 1800,
+        activeBuff: null,
+        activeUntil: 0,
+        buffIcon: { 
+            x: 0, 
+            y: 0, 
+            type: null, 
+            visible: false, 
+            speed: 0,
+            collected: false,
+            rotation: 0,
+            pulse: 0
+        },
+        hitsWithColor: 0,
+        originalBallSize: ball.size,
+        originalBallSpeed: game.ballSpeed
+    };
+    
+    // ... остальной код ...
+}
