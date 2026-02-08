@@ -122,7 +122,15 @@
             color: #FFEB3B;
             min-width: 80px;
         }
-        
+        .game-timer {
+    font-size: 20px;
+    font-weight: bold;
+    color: #4CAF50;
+    text-shadow: 0 0 5px #4CAF50;
+    min-width: 80px;
+    text-align: center;
+    transition: color 0.3s;
+}
         .buff-timer {
             font-size: 12px;
             color: #FF9800;
@@ -394,6 +402,7 @@
         <div id="gameScreen" class="screen">
             <div class="game-header">
                 <div class="score" id="scoreDisplay">0 : 0</div>
+                  <div class="game-timer" id="gameTimer">00:00</div>
                 <div class="difficulty-badge easy-badge" id="difficultyBadge">ЛЕГКАЯ</div>
             </div>
             
@@ -469,25 +478,33 @@
         };
         
         // ========== СОСТОЯНИЕ ИГРЫ ==========
-        let canvas, ctx;
-        let game = {
-            active: false,
-            paused: false,
-            difficulty: 'easy',
-            playerScore: 0,
-            opponentScore: 0,
-            sound: true,
-            showMobile: true,
-            ballSpeed: 5,
-            buffsEnabled: true
-        };
-        
-        // Игровые объекты
-        let player, opponent, ball;
-        let keys = {};
-        
-        // Система бафов
-        let buffSystem = {
+       let canvas, ctx;
+let game = {
+    active: false,
+    paused: false,
+    difficulty: 'easy',
+    playerScore: 0,
+    opponentScore: 0,
+    sound: true,
+    showMobile: true,
+    ballSpeed: 5,
+    buffsEnabled: true,
+    
+    // ДОБАВЛЕННЫЕ ПЕРЕМЕННЫЕ ДЛЯ ТАЙМЕРА И УСКОРЕНИЯ:
+    speedIncreaseTimer: 0,      // таймер для ускорения мяча
+    speedIncreaseInterval: 600, // ускорять каждые 10 секунд (600 кадров)
+    currentSpeedLevel: 1,       // текущий уровень скорости
+    startTime: 0,               // время начала игры
+    gameTime: 0,                // общее время игры в секундах
+    timerInterval: null         // интервал таймера
+};
+
+// Игровые объекты
+let player, opponent, ball;
+let keys = {};
+
+// Система бафов
+let buffSystem = {
            cooldown: 450, // 15 секунд
 activeBuff: null,
 activeUntil: 0,
@@ -608,8 +625,36 @@ originalBallSpeed: 5
             
             gameLoop();
         }
-        
+        // ========== ТАЙМЕР ИГРЫ ==========
+function startGameTimer() {
+    game.startTime = Date.now();
+    game.gameTime = 0;
+    
+    if (game.timerInterval) clearInterval(game.timerInterval);
+    
+    game.timerInterval = setInterval(() => {
+        if (game.active && !game.paused) {
+            game.gameTime = Math.floor((Date.now() - game.startTime) / 1000);
+            const minutes = Math.floor(game.gameTime / 60);
+            const seconds = game.gameTime % 60;
+            const timerElement = document.getElementById('gameTimer');
+            if (timerElement) {
+                timerElement.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+    }, 1000);
+}
+
+function stopGameTimer() {
+    if (game.timerInterval) {
+        clearInterval(game.timerInterval);
+        game.timerInterval = null;
+    }
+}
+// ========== КОНЕЦ ТАЙМЕРА ==========
         // ========== УПРАВЛЕНИЕ ==========
+       
         function setupControls() {
             keys = {};
             
@@ -812,27 +857,42 @@ function spawnBuffIcon() {
         }
         
         // ========== ИГРОВАЯ ЛОГИКА ==========
-        function update() {
-            if (!game.active || game.paused) return;
-            
-            // Обновление бафов
-            updateBuffs();
-            
-            // Игрок
-            if ((keys['w'] || keys['arrowup']) && player.y > 0) {
-                player.y -= player.speed;
-            }
-            if ((keys['s'] || keys['arrowdown']) && player.y < canvas.height - player.height) {
-                player.y += player.speed;
-            }
-            
-            // AI
-            const diff = DIFFICULTY[game.difficulty];
-            let targetY = ball.y - opponent.height / 2;
-            
-            if (Math.random() > diff.aiAccuracy) {
-                targetY += (Math.random() - 0.5) * 70;
-            }
+    function update() {
+    if (!game.active || game.paused) return;
+    
+    // ← ВСТАВЬ ЭТОТ БЛОК ДЛЯ УСКОРЕНИЯ МЯЧА:
+    // Автоматическое ускорение мяча со временем
+    game.speedIncreaseTimer++;
+    if (game.speedIncreaseTimer >= game.speedIncreaseInterval) {
+        game.speedIncreaseTimer = 0;
+        game.currentSpeedLevel++;
+        
+        // Увеличиваем скорость на 10%
+        ball.dx *= 1.1;
+        ball.dy *= 1.1;
+        game.ballSpeed *= 1.1;
+        
+        // Звуковой сигнал
+        if (game.sound) beep(800, 0.2);
+        
+        // Меняем цвет таймера при ускорении
+        const timerElement = document.getElementById('gameTimer');
+        if (timerElement) {
+            timerElement.style.color = '#FF9800';
+            setTimeout(() => {
+                timerElement.style.color = '#4CAF50';
+            }, 500);
+        }
+    }
+    
+    // Обновление бафов
+    updateBuffs();
+    
+    // Игрок
+    if ((keys['w'] || keys['arrowup']) && player.y > 0) {
+        player.y -= player.speed;
+    }
+    // ... остальной код ...
             
             if (opponent.y < targetY && opponent.y < canvas.height - opponent.height) {
                 opponent.y += Math.min(opponent.speed, targetY - opponent.y);
